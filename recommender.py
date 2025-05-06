@@ -19,18 +19,17 @@ import pickle
 class RAGContentRecommender:
     """
     A recommendation system that combines vector similarity search with LLM-enhanced output generation.
-    Uses Chroma as the vector database instead of FAISS.
     """
 
     def __init__(
         self,
-        movies_path: str = "/content/drive/MyDrive/movies.csv",
-        tv_shows_path: str = "/content/drive/MyDrive/tv_series.csv",
+        movies_path: str = "/path/to/your/csv",
+        tv_shows_path: str = "/path/to/your/csv",
         embedding_model_name: str = "all-MPNet-base-v2",
         groq_api_key: str = None,
-        chroma_persist_directory: str = "/content/drive/MyDrive/chroma_db/recommender",
+        chroma_persist_directory: str = "/persist/chroma_db/recommender",
         use_memory_cache: bool = True,
-        descriptions_cache_path: str = "/content/drive/MyDrive/content_descriptions.pkl"
+        descriptions_cache_path: str = "/path/to/your/pickle"
     ):
 
         # Set up embedding model
@@ -679,11 +678,11 @@ class RAGContentRecommender:
 
 # Initialize the recommender
 recommender = RAGContentRecommender(
-    movies_path="/content/drive/MyDrive/movies.csv",
-    tv_shows_path="/content/drive/MyDrive/tv_series.csv",
-    gemini_api_key=os.getenv("GEMINI_API_KEY"),
-    chroma_persist_directory="/content/drive/MyDrive/chroma_db",
-    descriptions_cache_path="/content/drive/MyDrive/content_descriptions.pkl"
+    movies_path="/path/to/your/csv",
+    tv_shows_path="/path/to/your/csv",
+    groq_api_key=os.getenv("GROQ_API_KEY"),
+    chroma_persist_directory="/persist/chroma_db/recommender",
+    descriptions_cache_path="/path/to/your/pickle"
 )
 
 # Check if collection has items and build index if needed
@@ -693,6 +692,8 @@ if stats.get("total_items", 0) == 0:
     recommender.build_index()
 else:
     print(f"Using existing index with {stats.get('total_items')} items.")
+
+
 queries = [
     "Shows like Breaking Bad with a complex protagonist",
     "Movies directed by Christopher Nolan",
@@ -711,10 +712,6 @@ queries = [
 # Process each query
 for i, query in enumerate(queries, 1):
     print(f"\n--- Query {i}: {query} ---")
-
-    # Get recommendations
     recommendations = recommender.recommend(query, top_k=5)
-
-    # Print recommendations
     print(recommendations)
     print("\n" + "-"*80)

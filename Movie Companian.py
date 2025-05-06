@@ -139,13 +139,13 @@ class MovieAgent:
 agent = MovieAgent(
     gemini_api_key = os.environ.get("GOOGLE_API_KEY"),
     groq_api_key= os.environ.get("GROQ_API_KEY"),
-    qa_chroma_path="/content/drive/MyDrive/chroma_db/plots",           
-    recommender_chroma_path="/content/drive/MyDrive/chroma_db/recommender700",
-    metadata_path="/content/drive/MyDrive/movie_qa.pkl",
-    csv_path="/content/drive/MyDrive/plots.csv",
-    movies_path="/content/drive/MyDrive/movies.csv",
-    tv_shows_path="/content/drive/MyDrive/tv_series.csv",
-    descriptions_cache_path="/content/drive/MyDrive/content_description.pkl"
+    recommender_chroma_path="/persist/chroma_db/recommender",
+    metadata_path="/path/to/your/metadata",
+    descriptions_cache_path="/path/to/your/pickle",
+    csv_path="/path/to/your/csv",
+    qa_chroma_path="/persist/chroma_db/plots",           
+    movies_path="/path/to/your/csv",
+    tv_shows_path="/path/to/your/csv",
 )
 
 # Use Q&A

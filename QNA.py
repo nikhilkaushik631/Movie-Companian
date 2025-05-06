@@ -25,14 +25,14 @@ class MovieQASystem:
 
     def __init__(
         self,
-        plots_path: str = "/content/drive/MyDrive/plots.csv",
-        additional_data_path: str = "/content/drive/MyDrive/content_descriptions.pkl",
+        plots_path: str = "/path/to/your/csv",
+        additional_data_path: str = "/path/to/your/pickle",
         embedding_model_name: str = "all-MPNet-base-v2",
         gemini_api_key: str = None,
         groq_api_key: str = None,
-        chroma_persist_directory: str = "/content/drive/MyDrive/chroma_db/plots",
+        chroma_persist_directory: str = "/persist/chroma_db/plots",
         use_memory_cache: bool = True,
-        metadata_cache_path: str = "/content/drive/MyDrive/movie_qa_metadata.pkl"
+        metadata_cache_path: str = "/path/to/your/metadata"
     ):
 
         self.plots_path = plots_path
@@ -668,10 +668,10 @@ class MovieQASystem:
             raise
 
 
-plots_path = "/content/drive/MyDrive/plots.csv"
-additional_data_path = "/content/drive/MyDrive/content_descriptions.pkl"
-chroma_persist_directory = "/content/drive/MyDrive/chroma_db/plots"
-metadata_cache_path = "/content/drive/MyDrive/movie_qa.pkl"
+plots_path = "/path/to/your/csv"
+additional_data_path = "/path/to/your/pickle"
+chroma_persist_directory = "/persist/chroma_db/plots"
+metadata_cache_path = "/path/to/your/metadata"
 
 os.makedirs(chroma_persist_directory, exist_ok=True)
 os.makedirs(os.path.dirname(metadata_cache_path), exist_ok=True)
