@@ -18,27 +18,29 @@ This project consists of two main components:
 - **Vector Database**: Stored embeddings in ChromaDB for similarity searching
 - **Content Metadata**: Created detailed JSON descriptions including title, rating, popularity, cast, genres, etc.
 - **Recommendation Engine**: Uses vector similarity search with popularity weighting
-- **Response Generation**: LLM generates natural language recommendations based on retrieved content
+- **Response Generation**: LLM (Gemini) generates natural language recommendations based on retrieved content
 
 ### Q&A System
 
 #### Embeddings-Based Q&A
 
-- Uses the same content embeddings as the recommendation system
-- Extracts title from user query and retrieves relevant information
-- Combines plot data, Wikipedia introductions, and content metadata
-- LLM generates comprehensive answers based on retrieved information
+- Data Source: Same IMDb dataset used for recommendations (10,000+ titles)
+- Embedding Generation: Used BERT (MiniLM-L6-v2) to create embeddings of plot descriptions
+- Vector Database: Stored in ChromaDB with title, plot, and Wikipedia introduction
+- Query Processing: Extracts title or topic from user query
+- Data Retrieval: Fetches relevant content metadata and plot information
+- Response Generation: LLM (Groq) synthesizes answers based on retrieved content
 
 #### Multi-Agent Web-Enhanced Q&A
 
-Built using LangGraph and LangChain frameworks with multiple specialized agents:
+Built using LangGraph and LangChain frameworks with multiple specialized agents using Groq and Gemini LLM's:
 
 1. **Query Analysis Agent**: Determines if a query is within the system's scope
 2. **Database Query Agent**: Uses embedding-based retrieval for answers
 3. **Analysis Agent**: Determines if database answers are sufficient or web search is needed
 4. **Web Search Agent**: Searches DuckDuckGo and retrieves top results
 5. **Content Extraction Agent**: Extracts relevant information from web results
-6. **Response Synthesis Agent**: Creates final, tailored responses
+6. **Response Synthesis Agent**: Creates final, tailored responses 
 
 ## Features
 
@@ -56,9 +58,10 @@ Built using LangGraph and LangChain frameworks with multiple specialized agents:
 - **Agent Framework**: LangGraph and LangChain
 - **Search Integration**: DuckDuckGo
 - **Data Sources**: IMDb, Wikipedia, Web
+- **LLM's**: Groq and Gemini
 
 ## Future Work
-
+- Implementing user interface based chatbot
 - User preference tracking
 - Voice interface integration
 - Improved multi-language support
