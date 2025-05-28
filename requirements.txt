@@ -1,0 +1,16 @@
+pandas
+numpy
+requests
+beautifulsoup4
+python-dotenv
+duckduckgo-search
+langchain
+langchain-community
+langchain-groq
+langchain-google-genai
+langgraph
+sentence-transformers
+pinecone
+tqdm
+chromadb
+gradio
