@@ -1,4 +1,4 @@
-# Movie Companion - Smart Entertainment Assistant using RAG and AI Agents
+# Entertainment Companion - using RAG and AI Agents
 
 A powerful entertainment assistant that provides movie/TV recommendations and answers questions about entertainment content using Retrieval Augmented Generation (RAG) and AI agents.
 
