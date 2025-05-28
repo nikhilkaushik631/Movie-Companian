@@ -6,7 +6,7 @@ A powerful entertainment assistant that provides movie/TV recommendations and an
 
 This project consists of two main components:
 1. **Recommendation System** - Provides personalized movie and TV show recommendations based on user queries
-2. **Q&A and Trivia System** - Answers questions about movies, TV shows, and entertainment topics
+2. **Q&A System** - Answers questions about movies, TV shows, and entertainment topics
 
 ## Architecture
 
