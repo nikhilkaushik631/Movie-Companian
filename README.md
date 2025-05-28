@@ -15,9 +15,9 @@ This project consists of two main components:
 **Data Collection & Processing:**
 * **Data Source**: Scraped IMDb for 10,000+ movies and TV shows (worldwide and Indian content)
 * **Dataset Structure**: Two main CSV files - one with comprehensive title information, another with detailed plots
-* **Embedding Generation**: Used BERT (all-MPNET-base-v2) to create embeddings of content descriptions
+* **Embedding Generation**: Used sentence transformers - all-MPNET-base-v2 to create embeddings of content descriptions
 * **Vector Database**: Stored embeddings in Pinecone vector database accessed via Pinecone API
-* **Content Metadata**: Created detailed JSON descriptions including title, rating, vote_count, popularity, release_date, original_language, overview, genres, production_companies, cast, keywords, budget, collection, directors, imdb_id, country_of_origin, seasons_count, episode_count, runtime, network, etc.
+* **Content Metadata**: Created detailed JSON descriptions for the columns title, rating, vote_count, popularity, release_date, original_language, overview, genres, production_companies, cast, keywords, budget, collection, directors, imdb_id, country_of_origin, seasons_count, episode_count, runtime, network, etc.
 
 **Recommendation Engine:**
 * Uses Pinecone's default similarity search functionality with popularity weighting
@@ -31,7 +31,7 @@ The Q&A system combines two approaches into a unified solution:
 
 #### Part 1: Embeddings-Based Q&A
 * **Data Source**: Uses plots.csv containing imdb_id, title, plot, and wikipedia_introduction
-* **Embedding Storage**: Same BERT embeddings stored in Pinecone
+* **Embeddings**: Created sentence transformers embeddings for plots.csv and stored in Pinecone
 * **Query Processing**: Extracts title information from text-based queries
 * **Response Generation**: Combines content descriptions from recommendation system with plot and introduction info for comprehensive LLM responses
 
@@ -39,12 +39,16 @@ The Q&A system combines two approaches into a unified solution:
 Built using **LangGraph** and **LangChain** frameworks with multiple specialized LLM models:
 
 **Agent Architecture:**
-1. **Query Handler Agent**: Manages follow-up queries, rewrites prompts for web search, and validates system relevance
-2. **Query Database Agent**: Uses embedding-based system to provide initial answers
-3. **Analyze Query Agent**: Determines if database answers are sufficient or if web search is required
-4. **Web Search Agent**: Performs web searches using DuckDuckGo and scrapes information from top results
-5. **Content Extraction Agent**: Extracts relevant information from scraped web content based on query context
-6. **Response Synthesis Agent**: Creates final tailored responses using information from database agent and/or web search results
+
+1. **Query Database Agent**: Uses embedding-based system to provide initial answers
+2. **Analyze Query Agent**: Determines if database answers are sufficient or if web search is required
+3. **Web Search Agent**: Performs web searches using DuckDuckGo and scrapes information from top results
+4. **Content Extraction Agent**: Extracts relevant information from scraped web content based on query context
+5. **Response Synthesis Agent**: Creates final tailored responses using information from database agent and/or web search results
+
+
+### Additional Functionality:
+Managed follow-up queries, rewritten prompts for web search, and validated system relevance
 
 ## Implementation Details
 
@@ -63,7 +67,7 @@ Built using **LangGraph** and **LangChain** frameworks with multiple specialized
 * **Data Sources**: IMDb, Wikipedia, Web scraping
 * **API Framework**: FastAPI
 * **UI Framework**: Gradio
-* **LLM Models**: Multiple models used based on specific strengths
+* **LLM Models**: Multiple models from Grow and Gemini were used based on specific strengths
 
 ## Features
 
