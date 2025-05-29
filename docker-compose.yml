@@ -1,0 +1,30 @@
+
+version: '3.8'
+
+services:
+  movie-companion:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"  # FastAPI
+      - "7860:7860"  # Gradio
+    volumes:
+      - ./Dataset:/app/Dataset
+      - ./.gitattributes:/app/.gitattributes
+      - ./google_credentials.json:/app/google_credentials.json:ro
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/app
+      - FASTAPI_URL=http://localhost:8000  
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/google_credentials.json
+    image: darthvader640/movie-companion-app:latest
+    restart: unless-stopped
+    container_name: movie-companion-app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health", "||", "curl", "-f", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

@@ -54,6 +54,7 @@ Built using **LangGraph** and **LangChain** frameworks with multiple specialized
 * **User Interface**: **Gradio**-based chatbot interface that calls FastAPI endpoints
 * **Deployment**: Currently runs locally (not hosted)
 * **Async Support**: Full async/await functionality throughout both systems
+* **Docker Support**: Pull the docker image from **"darthvader640/movie-companion-app:latest"**
 
 ### Technical Stack
 * **Embedding Model**: all-MPNET-base-v2
@@ -90,6 +91,34 @@ pip install -r requirements.txt
 4. Configure LLM API keys
 5. Run the FastAPI server
 6. Launch Gradio interface
+
+Or run it directly by pulling the docker image and creating a container
+
+### Docker Deployment
+
+The application is containerized and available on Docker Hub:
+
+```bash
+# Pull the Docker image
+docker pull darthvader640/movie-companion-app:latest
+
+# Run using Docker Compose (recommended)
+docker-compose up
+
+# Or run manually
+docker run -p 8000:8000 -p 7860:7860 darthvader640/movie-companion-app:latest
+```
+
+**Docker Configuration:**
+- **FastAPI**: Runs on localhost - port:8000
+- **Gradio UI**: Runs on localhost - port:7860
+- **Dockerfile**: Optimized build with .dockerignore
+- **Docker Compose**: Configured for both services
+
+**Files included:**
+- `Dockerfile` - Container configuration
+- `docker-compose.yml` - Multi-service orchestration
+- `.dockerignore` - Build optimization
 
 ## API Endpoints
 
