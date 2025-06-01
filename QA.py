@@ -25,11 +25,13 @@ class MovieQASystem:
         self,
         csv_path=os.environ.get("plots_path"),
         additional_data_path=os.environ.get("description_path"),
-        embedding_model_name: str = "all-MPNet-base-v2",
+        # embedding_model_name: str = "all-MPNet-base-v2",
+        embedding_model_name: str = "all-MiniLM-L6-V2",
         google_api_key=os.environ.get("google_api_key"),
         groq_api_key=os.environ.get("groq_api_key"),
         pinecone_api_key=os.environ.get("pinecone_api_key"),
-        pinecone_index_name: str = "movie-titles",
+        # pinecone_index_name: str = "movie-titles",
+        pinecone_index_name: str = "movie-plot",
         use_memory_cache: bool = True,
         metadata_cache_path=os.environ.get("metadata_path")
     ):
@@ -56,15 +58,15 @@ class MovieQASystem:
                                     "Please create and populate it before using this system.")
             self.index = self.pc.Index(self.pinecone_index_name)
             print(f"Successfully connected to Pinecone index '{self.pinecone_index_name}'.")
-            print("Index Stats: ",self.index.describe_index_stats()) # Print stats for confirmation
+            # print("Index Stats: ",self.index.describe_index_stats()) # Print stats for confirmation
 
         except Exception as e:
             raise RuntimeError(f"Could not initialize Pinecone: {e}") from e
 
         self._load_metadata()
         self.load_pickle_data()
-        stats = self.verify_pinecone_collection()
-        print(f"Index Stats: {stats}")
+        # stats = self.verify_pinecone_collection()
+        # print(f"Index Stats: {stats}")
         self.plots_df = pd.read_csv(self.csv_path) if os.path.exists(self.csv_path) else None
         self.groq = ChatGroq(
             model_name="meta-llama/llama-4-scout-17b-16e-instruct",
@@ -428,22 +430,22 @@ class MovieQASystem:
             return f"I encountered an error while trying to answer your question: {str(e)}"
 
 
-async def main():
-    qa_system = MovieQASystem()
+# async def main():
+#     qa_system = MovieQASystem()
 
 
 
-    qq= ["what is the main story of dune part two",
-            # "In the movie 'The Shawshank Redemption', who is the main character?",
-            # "What happens at the end of Inception?",
-            # "Tell me about the plot of 'The Godfather'",
-            # "Who played the main villain in Dark Knight?",
-            "What's the twist in 'Fight Club'?"]
-    for query in qq:
-        answer = await qa_system.answer_query(query)
-        print(f"Q: {query}")
-        print(f"A: {answer}")
-        await asyncio.sleep(0.5)
+#     qq= ["what is the main story of dune part two",
+#             # "In the movie 'The Shawshank Redemption', who is the main character?",
+#             # "What happens at the end of Inception?",
+#             # "Tell me about the plot of 'The Godfather'",
+#             # "Who played the main villain in Dark Knight?",
+#             "What's the twist in 'Fight Club'?"]
+#     for query in qq:
+#         answer = await qa_system.answer_query(query)
+#         print(f"Q: {query}")
+#         print(f"A: {answer}")
+#         await asyncio.sleep(0.5)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# if __name__ == "__main__":
+#     asyncio.run(main())

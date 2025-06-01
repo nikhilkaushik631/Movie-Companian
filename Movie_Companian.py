@@ -13,13 +13,12 @@ from langchain.cache import InMemoryCache
 langchain.llm_cache = InMemoryCache()
 class MovieChatbot:
     def __init__(self, 
-                google_api_key: str = None,
-                groq_api_key: str = None,
+                google_api_key: str = os.getenv("google_api_key"),
+                gemini_api_key: str = os.getenv("gemini_api_key"),
                 chat_history_limit: int = 15):
             
         self.google_api_key = google_api_key
-        self.groq_api_key = groq_api_key
-
+        self.gemini_api_key = gemini_api_key
         self.chat_history_limit = chat_history_limit
 
         self.recommender = RAGContentRecommender()
@@ -40,10 +39,10 @@ class MovieChatbot:
             google_api_key=self.google_api_key,
             temperature=0.7
         )
-        self.llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
-            groq_api_key=self.groq_api_key,
-            temperature=0.2 
+        self.llm = ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash", 
+            gemini_api_key=self.gemini_api_key,
+            temperature=0.2
         )
 
         self.memory = ConversationBufferMemory(
@@ -54,15 +53,24 @@ class MovieChatbot:
 
         validation_prompt_with_history = ChatPromptTemplate.from_messages([
             SystemMessagePromptTemplate.from_template(
-                """You are a Movie Query Validator. Based on the recent conversation and the current query,
-                determine if the current query is related to movies or TV series.
-                This could be a follow-up question to the previous movie conversation.
-                Consider both the query itself and its context in the conversation.
-                Return "yes" if it's related to movies/TV (either directly or as a follow-up), or "no" if it's not.
-                Give your answer as just "yes" or "no" with no extra commentary."""
+                """You are a Movie Query Validator. Your task is to determine if a query is related to:
+                - Movies (including unreleased or upcoming movies)
+                - TV shows
+                - Actors/Actresses
+                - Directors
+                - Movie/Show reviews or ratings
+                - Movie/Show plots or storylines
+                - Movie/Show recommendations
+                - Any aspect of cinema or television
+
+                Consider both direct and indirect references to movies/TV.
+                Even if you're unsure about a specific movie title, if the query is asking about a movie/show/review/plot, consider it valid.
+
+                Return ONLY "yes" if there's ANY possible connection to movies/TV, or "no" if completely unrelated.
+                When in doubt, prefer returning "yes" to provide a better user experience."""
             ),
             MessagesPlaceholder(variable_name="chat_history"), 
-            HumanMessagePromptTemplate.from_template("Current query: {query}\n\nAnswer:")
+            HumanMessagePromptTemplate.from_template("Query: {query}\nIs this movie/TV related?")
         ])
 
         self.validation_chain = LLMChain(
@@ -127,10 +135,12 @@ class MovieChatbot:
         Validate if the query is related to movies or TV shows
         """
         try:
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(None, self.validation_chain.invoke, {"query": query})
+            result = await self.validation_chain.ainvoke({"query": query})
             validation_result = result.get("validation_result", "").strip().lower()
-            return validation_result == "yes"
+            positive_indicators = ["yes", "y", "true", "valid", "related"]
+            is_valid = any(indicator in validation_result for indicator in positive_indicators)
+                
+            return is_valid
         except Exception as e:
             print(f"Error in validation: {e}")
             return False
@@ -145,8 +155,7 @@ class MovieChatbot:
             if not current_history:
                 return query 
 
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(None, self.rewriting_chain.invoke, {"query": query})
+            result = await self.rewriting_chain.ainvoke({"query": query})
             rewritten_query = result.get("rewritten_query", "").strip()
             return rewritten_query if rewritten_query else query
         except Exception as e:
@@ -158,8 +167,8 @@ class MovieChatbot:
         Determine whether the query is for QA or recommendation
         """
         try:
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(None, self.router_chain.invoke, {"query": query})
+
+            result = await self.router_chain.ainvoke({"query": query})
             route = result.get("route", "").strip().lower()
             return route if route in ["qa", "recommend"] else "qa"
         except Exception as e:
@@ -195,7 +204,7 @@ class MovieChatbot:
         try:
             if query_type == "qa":
                 if hasattr(self.movie_system, 'aprocess_query'):
-                     result = await self.movie_system.aprocess_query(resolved_query)
+                    result = await self.movie_system.aprocess_query(resolved_query)
                 else:
                     result = await self.movie_system.process_query(resolved_query)
 
@@ -240,33 +249,30 @@ class MovieChatbot:
 
 # async def main_async():
 #     """Asynchronous main function to run the chatbot."""
-#     chatbot = MovieChatbot(
-#         google_api_key = os.getenv("google_api_key"),
-#         groq_api_key = os.getenv("groq_api_key")
-#     )
+#     chatbot = MovieChatbot()
 
-#     # queries_to_test = [
-#     #     # "Who directed Inception?",
-#     #     # "Did he direct any other sci-fi movies?",
-#     #     # "Recommend me movies like those",
-#     #     # "What is the capital of France?",
-#     #     # "What is the capital of Italy?",
-#     #     # "movies with great cgi like dune part two",
-#     #     "who directed dune part two?",
-#     #     "japanese anime like bleach",
-#     #     # "movies like interstellar",
-#     #     # "In the movie 'The Shawshank Redemption', who is the main character?",
-#     #     # "What happens at the end of Inception?",
-#     #     # "Tell me about the plot of 'The Godfather'",
-#     # ]
+#     queries_to_test = [
+#         "Who directed Inception?",
+#         "Did he direct any other sci-fi movies?",
+#         "Recommend me movies like those",
+#         # "What is the capital of France?",
+#         # "What is the capital of Italy?",
+#         "movies with great cgi like dune part two",
+#         "who directed dune part two?",
+#         # "japanese anime like bleach",
+#         # "movies like interstellar",
+#         # "In the movie 'The Shawshank Redemption', who is the main character?",
+#         # "What happens at the end of Inception?",
+#         # "Tell me about the plot of 'The Godfather'",
+#     ]
 
-#     # for query in queries_to_test:
-#     #     print(f"\nUser: {query}") 
-#     #     response = await chatbot.chat(query)
-#     #     print(f"MovieBot: {response}") 
-#     #     await asyncio.sleep(2)
+#     for query in queries_to_test:
+#         print(f"\nUser: {query}") 
+#         response = await chatbot.chat(query)
+#         print(f"MovieBot: {response}") 
+#         await asyncio.sleep(2)
 
-#     await chatbot.start_chatbot_cli()
+#     # await chatbot.start_chatbot_cli()
 
 # if __name__ == "__main__":
 #     # To run the async version:

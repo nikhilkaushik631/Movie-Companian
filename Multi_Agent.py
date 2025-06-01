@@ -64,7 +64,7 @@ class IntegratedQASystem:
         """Agent for querying the existing movie database"""
         try:
             db_response = await self.qa_system.answer_query(state.original_query)
-            print(f"Database response: {db_response}")  
+            # print(f"Database response: {db_response}")  
             state.db_response = db_response
         except Exception as e:
             state.db_response = f"Error querying database: {str(e)}"
@@ -107,7 +107,7 @@ class IntegratedQASystem:
         }}
         """)
         
-        chain = LLMChain(llm=self.groq2, prompt=analysis_prompt)
+        chain = LLMChain(llm=self.groq1, prompt=analysis_prompt)
         response = await chain.ainvoke({
             "original_query": state.original_query,
             "db_response": state.db_response
@@ -129,6 +129,8 @@ class IntegratedQASystem:
             state.needs_web_search = result.get("needs_web_search", False)
             state.search_query = result.get("search_query", state.original_query + " movie info")
             state.analysis_result = result
+            if state.needs_web_search:
+                print("I couldn't find the answer in my database. Please wait while I search the web for you...")
             
         except Exception as e:
             # General fallback: Be cautious and trigger a search.
@@ -142,71 +144,6 @@ class IntegratedQASystem:
             }
         
         return state
-
-    # async def _analyze_query_agent(self, state: MovieQueryState) -> MovieQueryState:
-    #     """Agent for analyzing if web search is needed"""
-
-    #     analysis_prompt = ChatPromptTemplate.from_template("""
-    #     You are a query analyzer agent. You work with queries related to Movies and Tv Series. Analyze this user query and the database response to determine if web search is needed.
-
-    #     User Query: {original_query}
-
-    #     Database Response: {db_response}
-
-    #     Your analysis tasks:
-    #     1. EVALUATION: Does the database response exactly answer the specific user query? Consider whether it:
-    #       - If the title of asked user query and the title in the database response do not match, then do a web search.
-    #       - Provides the specific information requested (names, dates, lists, etc.)
-    #       - Includes all requested details (not just general descriptions)
-    #       - Contains accurate and complete information
-    #       - Addresses the actual intent of the query (not just the topic)
-    #       - The embeddings can be old and have little information on recent movies or TV shows, so be aware of that.
-    #       - If the response is insufficient, set `needs_web_search` to true.
-                                                           
-    #     2. SPECIFICITY CHECK: Is the user asking for specific information like:
-    #       - Lists of items, people, or entities (e.g., "list all characters", "who are the members")
-    #       - Detailed facts (e.g., "when did", "where was", "how many")
-    #       - Comparisons or relationships (e.g., "difference between", "connection between")
-    #       - Chronological information (e.g., "timeline", "order of events")
-
-    #     3. MISSING INFORMATION: Identify any specific information requested but not provided.
-
-    #     Return a valid JSON with these fields ONLY:
-    #     - "needs_web_search": true/false (set to true if the database response doesn't fully answer the specific query)
-    #     - "reason": explain exactly what information is missing or incomplete
-    #     - "entities": list of key entities to search for
-    #     - "search_query": an optimized search query focused on the SPECIFIC missing information
-    #     """)
-        
-    #     chain = LLMChain(llm=self.gemini, prompt=analysis_prompt)
-    #     # loop = asyncio.get_event_loop()
-    #     # response = await loop.run_in_executor(None, chain.invoke, {
-    #     #     "original_query": state.original_query,
-    #     #     "db_response": state.db_response
-    #     # })
-    #     response = await chain.ainvoke({
-    #         "original_query": state.original_query,
-    #         "db_response": state.db_response
-    #     })
-        
-    #     try:
-    #         # Parse the JSON response
-    #         result = json.loads(response['text'])
-    #         state.needs_web_search = result.get("needs_web_search", False)
-    #         state.search_query = result.get("search_query", state.original_query + " movie info")
-    #         state.analysis_result = result
-    #     except Exception as e:
-    #         # Fallback if JSON parsing fails
-    #         state.needs_web_search = "insufficient" in response['text'].lower() or "outdated" in response['text'].lower()
-    #         state.search_query = state.original_query + " movie info"
-    #         state.analysis_result = {
-    #             "needs_web_search": state.needs_web_search,
-    #             "entities": [e.strip() for e in state.original_query.split() if len(e) > 3],
-    #             "search_query": state.search_query,
-    #             "reason": "Analysis fallback due to parsing error"
-    #         }
-        
-    #     return state
     
 
     def _route_based_on_analysis(self, state: MovieQueryState) -> str:
@@ -230,7 +167,7 @@ class IntegratedQASystem:
                     state.search_query, 
                     region='wt-wt', 
                     safesearch='Moderate', 
-                    max_results=3
+                    max_results=2
                 )]
             
             urls = [r["href"] for r in results]
@@ -302,7 +239,7 @@ class IntegratedQASystem:
             """)
 
         
-        chain = LLMChain(llm=self.groq1, prompt=content_extraction_prompt)
+        chain = LLMChain(llm=self.groq2, prompt=content_extraction_prompt)
         # loop = asyncio.get_event_loop()
         # response = await loop.run_in_executor(None, chain.invoke, {
         #     "original_query": state.original_query,
@@ -446,7 +383,9 @@ class IntegratedQASystem:
             
             return {
                 "response": result["final_response"],
-                "sources": result["sources"]
+                "sources": result["sources"],
+                "used_web_search": result.get("analysis_result", {}).get("needs_web_search", False)
+
             }
         except Exception as e:
             error_msg = f"Error processing query: {str(e)}"

@@ -25,10 +25,12 @@ class RAGContentRecommender:
 
     def __init__(
         self,
-        embedding_model_name: str = "all-MPNet-base-v2",
+        # embedding_model_name: str = "all-MPNet-base-v2",
+        embedding_model_name: str = "all-MiniLM-L6-V2",
         groq_api_key=os.environ.get("groq_api_key"),
         pinecone_api_key=os.environ.get("pinecone_api_key"),
-        pinecone_index_name: str = "content-collection",
+        # pinecone_index_name: str = "content-collection",
+        pinecone_index_name: str = "content-recommender",
         use_memory_cache: bool = True,
         descriptions_cache_path=os.environ.get("description_path")
     ):
@@ -50,7 +52,7 @@ class RAGContentRecommender:
                                     "Please create and populate it before using this system.")
             self.index = self.pc.Index(self.pinecone_index_name)
             print(f"Successfully connected to Pinecone index '{self.pinecone_index_name}'.")
-            print("Index Stats: ",self.index.describe_index_stats()) # Print stats for confirmation
+            # print("Index Stats: ",self.index.describe_index_stats()) # Print stats for confirmation
 
         except Exception as e:
             raise RuntimeError(f"Could not initialize Pinecone: {e}") from e
@@ -249,9 +251,9 @@ class RAGContentRecommender:
         Based on the user's query and the JSON content information I recommend the most relevant content.
         For the query: {query}, Recommend the best {content_type} strictly matching the following context.
         - When the user asks for recent movies/shows, ONLY consider content from 2021-2025
-        - Do not recommend content same as the title in the query. limit the recommendation to top 3.
+        - Do not recommend content same as the title in the query. Example: if the query is "recommend movies like Inception", do not recommend Inception.
         - Do not reveal raw CSV fields. Avoid mentioning terms like release date, popularity, votes, or ratings.
-        - If JSON data is not available, rely on embedding-based insights.
+        - If JSON data is not available, rely on embedding-based insights. limit the recommendation to top 3.
         - Ensure recommendations are limited to content of type "{content_type}".
         - For queries about directors, only include recommendations by the mentioned director.
         - if asked about ratings then you can mention it in the description. if the rating is above 8/10 then it is highly rated
@@ -300,37 +302,37 @@ class RAGContentRecommender:
 
 
 
-async def main():
+# async def main():
 
-    recommender = RAGContentRecommender()
+#     recommender = RAGContentRecommender()
 
-    queries = [
-        # "Shows like Breaking Bad with a complex protagonist",
-        # "Movies directed by Christopher Nolan",
-        "which are the top hbo shows",
-        "top paramount movies",
-        # "Feel-good comedies of male leads",
-        # "Science fiction TV shows with time travel",
-        # "Recent action movies with high ratings",
-        # "movies with great cgi like dune part two",
-        # "japanese anime like bleach",
-        # "movies like interstellar",
-        # "recommend best marvel movies",
-        # "best batman movies",
-        # "best dc movies"
+#     queries = [
+#         # "Shows like Breaking Bad with a complex protagonist",
+#         # "Movies directed by Christopher Nolan",
+#         "which are the top hbo shows",
+#         "top paramount movies",
+#         # "Feel-good comedies of male leads",
+#         # "Science fiction TV shows with time travel",
+#         # "Recent action movies with high ratings",
+#         # "movies with great cgi like dune part two",
+#         # "japanese anime like bleach",
+#         # "movies like interstellar",
+#         # "recommend best marvel movies",
+#         # "best batman movies",
+#         # "best dc movies"
 
-    ]
+#     ]
 
-    # Process each query
-    for i, query in enumerate(queries, 1):
-        print(f"\n--- Query {i}: {query} ---")
+#     # Process each query
+#     for i, query in enumerate(queries, 1):
+#         print(f"\n--- Query {i}: {query} ---")
 
-        # Get recommendations
-        recommendations = await recommender.recommend(query, top_k=5)
+#         # Get recommendations
+#         recommendations = await recommender.recommend(query, top_k=5)
 
-        # Print recommendations
-        print(recommendations)
-        print("\n" + "-"*80)
+#         # Print recommendations
+#         print(recommendations)
+#         print("\n" + "-"*80)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# if __name__ == "__main__":
+#     asyncio.run(main())

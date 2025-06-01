@@ -61,7 +61,7 @@ Managed follow-up queries, rewritten prompts for web search, and validated syste
 * **Docker Support**: Pull the docker image from **"darthvader640/movie-companion-app:latest"**
 
 ### Technical Stack
-* **Embedding Model**: all-MPNET-base-v2
+* **Embedding Model**: all-MPNET-base-v2 and all-MiniLM-L6-V2
 * **Vector Database**: Pinecone
 * **Agent Framework**: LangGraph and LangChain
 * **Web Search**: DuckDuckGo integration
