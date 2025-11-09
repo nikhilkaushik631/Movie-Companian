@@ -1,0 +1,15 @@
+{
+  "name": "movie-companian-root",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend-next run dev",
+    "dev:demo": "npm --prefix frontend-next run dev:demo",
+    "dev:demo:3001": "npm --prefix frontend-next run dev:demo:3001",
+    "dev:demo:3002": "npm --prefix frontend-next run dev:demo:3002",
+    "build": "npm --prefix frontend-next run build",
+    "start": "npm --prefix frontend-next run start",
+    "lint": "npm --prefix frontend-next run lint"
+  }
+}
+
+

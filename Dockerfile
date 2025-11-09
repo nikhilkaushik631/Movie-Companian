@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
@@ -20,21 +20,22 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 RUN echo '#!/bin/bash' > start.sh && \
+    echo 'set -e' >> start.sh && \
     echo 'echo "Starting FastAPI server..."' >> start.sh && \
-    echo 'python API.py &' >> start.sh && \
+    echo 'uvicorn main:app --host 0.0.0.0 --port 8000 --log-level info &' >> start.sh && \
     echo 'echo "Waiting for FastAPI to start..."' >> start.sh && \
-    echo 'sleep 10' >> start.sh && \
+    echo 'sleep 5' >> start.sh && \
     echo 'until curl -f http://localhost:8000/health 2>/dev/null || curl -f http://localhost:8000 2>/dev/null; do' >> start.sh && \
     echo '    echo "Waiting for FastAPI to be ready..."' >> start.sh && \
-    echo '    sleep 5' >> start.sh && \
+    echo '    sleep 3' >> start.sh && \
     echo 'done' >> start.sh && \
-    echo 'echo "FastAPI is ready! Starting Gradio app..."' >> start.sh && \
-    echo 'exec python Gradio_App.py' >> start.sh
+    echo 'echo "FastAPI is ready!"' >> start.sh && \
+    echo 'exec tail -f /dev/null' >> start.sh
 
 RUN chmod +x start.sh
 
 # Expose ports
-EXPOSE 8000 7860
+EXPOSE 8000
 
 # Run the startup script
 CMD ["/bin/sh", "start.sh"]

@@ -1,3 +1,5 @@
+# cinemizer
+
 # Entertainment Companion Chatbot- using RAG and AI Agents
 
 A powerful entertainment assistant that provides movie/TV recommendations and answers questions about entertainment content using Retrieval Augmented Generation (RAG) and AI agents.
@@ -55,10 +57,10 @@ Managed follow-up queries, rewritten prompts for web search, and validated syste
 ### System Integration
 * **Unified Interface**: Both recommendation and Q&A systems are combined under a single file that intelligently routes queries
 * **API Layer**: Implemented using **FastAPI** for robust API endpoints
-* **User Interface**: **Gradio**-based chatbot interface that calls FastAPI endpoints
+* **User Interface**: Custom HTML/JS UI (`app.html`) that calls FastAPI endpoints, with voice (STT/TTS)
 * **Deployment**: Currently runs locally (not hosted)
 * **Async Support**: Full async/await functionality throughout both systems
-* **Docker Support**: Pull the docker image from **"darthvader640/movie-companion-app:latest"**
+* **Docker Support**: Build and run locally via Docker
 
 ### Technical Stack
 * **Embedding Model**: all-MPNET-base-v2 and all-MiniLM-L6-V2
@@ -91,33 +93,40 @@ pip install -r requirements.txt
 ### Installation
 1. Clone the repository
 2. Install dependencies
-3. Set up Pinecone API credentials
-4. Configure LLM API keys
+3. Set up Pinecone (optional) and other API credentials
+4. Configure LLM API keys via environment variables:
+
+```bash
+export GOOGLE_API_KEY=your_key
+export GEMINI_API_KEY=your_key
+export GROQ_API_KEY=your_key
+```
+
+Or create a `.env` file with the same variables.
+
 5. Run the FastAPI server
-6. Launch Gradio interface
+6. Open `app.html` in your browser
 
 Or run it directly by pulling the docker image and creating a container
 
 ### Docker Deployment
 
-The application is containerized and available on Docker Hub:
+Build and run locally (with reverse proxy and static hosting):
 
 ```bash
-# Pull the Docker image
-docker pull darthvader640/movie-companion-app:latest
+# Build
+docker build -t movie-companion:local .
 
-# Run using Docker Compose (recommended)
-docker-compose up
-
-# Or run manually
-docker run -p 8000:8000 -p 7860:7860 darthvader640/movie-companion-app:latest
+# Start stack (API + Nginx)
+docker compose up --build
 ```
 
+Open the app at `http://localhost:8080` (Nginx serves `app.html` and proxies `/api` to FastAPI).
+
 **Docker Configuration:**
-- **FastAPI**: Runs on localhost - port:8000
-- **Gradio UI**: Runs on localhost - port:7860
-- **Dockerfile**: Optimized build with .dockerignore
-- **Docker Compose**: Configured for both services
+- **FastAPI**: Internal container port 8000 (service `api`)
+- **Nginx**: Exposed on `http://localhost:8080` serving UI and proxying `/api`
+- **Dockerfile**: Starts `uvicorn main:app`
 
 **Files included:**
 - `Dockerfile` - Container configuration
@@ -129,6 +138,21 @@ docker run -p 8000:8000 -p 7860:7860 darthvader640/movie-companion-app:latest
 * **POST /chat** - Unified chatbot interface
 * **GET /health** - Get server response
 * **DELETE /sessions** - Delete current session
+
+## Frontend Usage
+
+- Open `app.html` in a modern browser.
+- Chat section sends your messages to the FastAPI `/chat` endpoint.
+- Clicking a trending card or search result now asks the AI about that title instead of showing a generic card.
+- Toggle voice responses with the "🔊 Voice" button. The bot will speak its answers using the browser's speech synthesis.
+- Use the mic button to dictate your query using the browser's speech recognition.
+
+Permissions:
+- On first use, the browser will ask for microphone permission for speech recognition.
+
+Notes:
+- Voice features use built-in browser APIs (Web Speech). They may be unavailable on some browsers/devices.
+- Ensure the backend is running at `http://localhost:8000` (configurable in `app.html` as `apiBaseUrl`).
 
 ## Future Enhancements
 

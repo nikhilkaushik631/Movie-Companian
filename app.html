@@ -1,0 +1,2224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinemizer - Your Movie Companion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8)), 
+                        url('https://wallpapercave.com/wp/wp13612149.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            min-height: 100vh;
+            color: #333;
+            position: relative;
+        }
+
+        /* Prevent white space on scroll */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -100vh;
+            left: -100vw;
+            width: 300vw;
+            height: 300vh;
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8)), 
+                        url('https://wallpapercave.com/wp/wp13612149.jpg');
+            background-size: cover;
+            background-position: center;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            color: #d4af37;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 8px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+            font-weight: bold;
+            letter-spacing: 3px;
+            background: linear-gradient(45deg, #d4af37, #ffd700, #b8860b, #ff6b35);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            color: #e6dcc6;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            font-weight: 300;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 25px;
+            margin-top: 25px;
+            align-items: start;
+        }
+
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .chat-section {
+            background: rgba(20, 15, 10, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 580px;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .trending-section {
+            background: rgba(20, 15, 10, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+        }
+
+        .trending-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .trending-header h3 {
+            color: #d4af37;
+            font-size: 1.3rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            font-weight: bold;
+            margin: 0;
+            flex-shrink: 0;
+        }
+
+        .trending-controls {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .trending-btn {
+            padding: 5px 10px;
+            background: rgba(212, 175, 55, 0.2);
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            border-radius: 14px;
+            color: #e6dcc6;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .trending-btn:hover, .trending-btn.active {
+            background: rgba(212, 175, 55, 0.4);
+            border-color: #d4af37;
+            transform: translateY(-1px);
+        }
+
+        .trending-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .trending-card {
+            background: rgba(30, 25, 20, 0.9);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            height: 320px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .trending-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+            border-color: #d4af37;
+        }
+
+        .trending-poster {
+            width: 100%;
+            height: 240px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #8b4513, #d4af37);
+        }
+
+        .trending-info {
+            padding: 10px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 0;
+        }
+
+        .trending-title {
+            color: #d4af37;
+            font-weight: bold;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+            line-height: 1.2;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-wrap: break-word;
+            hyphens: auto;
+            height: auto;
+            min-height: 2.4em;
+        }
+
+        .trending-year {
+            color: #e6dcc6;
+            font-size: 0.7rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .trending-rating {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 0.7rem;
+            margin-top: auto;
+        }
+
+        .trending-stars {
+            color: #ffd700;
+        }
+
+        .trending-score {
+            color: #d4af37;
+            font-weight: bold;
+        }
+
+        .popularity-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: rgba(212, 175, 55, 0.95);
+            color: #1a1410;
+            padding: 2px 5px;
+            border-radius: 8px;
+            font-size: 8px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .tv-show-indicator {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: rgba(139, 69, 19, 0.95);
+            color: #d4af37;
+            padding: 2px 5px;
+            border-radius: 8px;
+            font-size: 8px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .anime-indicator {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: rgba(255, 105, 180, 0.95);
+            color: #fff;
+            padding: 2px 5px;
+            border-radius: 8px;
+            font-size: 8px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .india-indicator {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: rgba(255, 153, 51, 0.95);
+            color: #fff;
+            padding: 2px 5px;
+            border-radius: 8px;
+            font-size: 8px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .loading-card {
+            background: rgba(30, 25, 20, 0.9);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            color: #e6dcc6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 320px;
+        }
+
+        .loading-spinner {
+            width: 25px;
+            height: 25px;
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-top: 2px solid #d4af37;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 6px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .chat-header {
+            background: rgba(30, 25, 20, 0.9);
+            color: #d4af37;
+            padding: 15px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            position: relative;
+        }
+
+        .chat-header h2 {
+            font-weight: bold;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            margin: 0;
+        }
+
+        .server-status {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: #e6dcc6;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 8px rgba(78, 205, 196, 0.6);
+        }
+
+        .status-indicator.offline {
+            background: #ff6b6b;
+            box-shadow: 0 0 8px rgba(255, 107, 107, 0.6);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: rgba(15, 10, 5, 0.8);
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.5);
+            border-radius: 3px;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-bubble {
+            max-width: 80%;
+            padding: 15px 20px;
+            border-radius: 20px;
+            word-wrap: break-word;
+            position: relative;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, #d4af37, #b8860b);
+            color: #1a1410;
+            border-bottom-right-radius: 6px;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .message.bot .message-bubble {
+            background: rgba(230, 220, 198, 0.95);
+            color: #2c241a;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-bottom-left-radius: 6px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .movie-card {
+            background: rgba(20, 15, 10, 0.9);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+            display: flex;
+            gap: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .movie-poster-large {
+            width: 70px;
+            height: 105px;
+            border-radius: 6px;
+            object-fit: cover;
+            border: 2px solid #d4af37;
+        }
+
+        .movie-details h4 {
+            color: #d4af37;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .movie-details p {
+            color: #e6dcc6;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+
+        .movie-rating {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 8px;
+        }
+
+        .rating-stars {
+            color: #ffd700;
+        }
+
+        .message-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #1a1410;
+            flex-shrink: 0;
+            font-size: 1.1rem;
+        }
+
+        .user-avatar {
+            background: linear-gradient(135deg, #d4af37, #b8860b);
+            border: 2px solid #ffd700;
+            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+        }
+
+        .bot-avatar {
+            background: linear-gradient(135deg, #8b4513, #a0522d);
+            border: 2px solid #d4af37;
+            color: #d4af37;
+            box-shadow: 0 2px 8px rgba(139, 69, 19, 0.3);
+        }
+
+        .chat-input {
+            padding: 15px 20px;
+            background: rgba(20, 15, 10, 0.95);
+            border-top: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 12px 18px;
+            border: 2px solid rgba(212, 175, 55, 0.5);
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+            background: rgba(230, 220, 198, 0.1);
+            color: #e6dcc6;
+            backdrop-filter: blur(5px);
+        }
+
+        .input-group input::placeholder {
+            color: rgba(230, 220, 198, 0.6);
+        }
+
+        .input-group input:focus {
+            border-color: #d4af37;
+            background: rgba(230, 220, 198, 0.15);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .send-btn, .clear-btn, .search-btn, .mic-btn {
+            padding: 12px 14px;
+            border: none;
+            border-radius: 50%;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #1a1410;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 45px;
+            height: 45px;
+            flex-shrink: 0;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #d4af37, #b8860b);
+            border: 2px solid #ffd700;
+            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+        }
+
+        .mic-btn {
+            background: linear-gradient(135deg, #1976d2, #42a5f5);
+            color: white;
+            border: 2px solid #42a5f5;
+        }
+
+        .mic-btn.listening {
+            background: linear-gradient(135deg, #c62828, #ef5350);
+            border-color: #ef5350;
+            box-shadow: 0 6px 20px rgba(239, 83, 80, 0.4);
+            animation: pulse 1.5s infinite;
+        }
+
+        .voice-toggle-btn {
+            background: transparent;
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            color: #e6dcc6;
+            border-radius: 12px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .voice-toggle-btn.active {
+            border-color: #d4af37;
+            color: #d4af37;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+            background: linear-gradient(135deg, #ffd700, #d4af37);
+        }
+
+        .clear-btn {
+            background: linear-gradient(135deg, #8b4513, #a0522d);
+            color: #e6dcc6;
+            border: 2px solid rgba(212, 175, 55, 0.5);
+        }
+
+        .clear-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 69, 19, 0.4);
+            background: linear-gradient(135deg, #a0522d, #8b4513);
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, #2e7d32, #4caf50);
+            color: white;
+            border: 2px solid #4caf50;
+            padding: 10px 12px;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            align-self: start;
+            position: sticky;
+            top: 20px;
+        }
+
+        .card {
+            background: rgba(20, 15, 10, 0.95);
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .card h3 {
+            margin-bottom: 15px;
+            color: #d4af37;
+            font-size: 1.2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            font-weight: bold;
+        }
+
+        .movie-search-section {
+            margin-bottom: 15px;
+        }
+
+        .search-input-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 2px solid rgba(212, 175, 55, 0.5);
+            border-radius: 18px;
+            background: rgba(230, 220, 198, 0.1);
+            color: #e6dcc6;
+            font-size: 13px;
+        }
+
+        .search-input::placeholder {
+            color: rgba(230, 220, 198, 0.6);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #d4af37;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .examples {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .example-btn {
+            padding: 10px 14px;
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 10px;
+            background: rgba(230, 220, 198, 0.1);
+            color: #e6dcc6;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.3s;
+            font-size: 12px;
+            backdrop-filter: blur(5px);
+            line-height: 1.3;
+        }
+
+        .example-btn:hover {
+            border-color: #d4af37;
+            background: rgba(212, 175, 55, 0.2);
+            transform: translateX(3px);
+            box-shadow: 0 3px 12px rgba(212, 175, 55, 0.2);
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .quick-btn {
+            padding: 8px 12px;
+            background: rgba(212, 175, 55, 0.2);
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            border-radius: 8px;
+            color: #e6dcc6;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        .quick-btn:hover {
+            background: rgba(212, 175, 55, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 8px 0;
+        }
+
+        .typing-dots {
+            display: inline-block;
+        }
+
+        .typing-dots span {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #d4af37;
+            margin: 0 2px;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+
+        .success-message {
+            color: #4caf50;
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2.8rem;
+            }
+            
+            .chat-section {
+                height: 400px;
+            }
+
+            body {
+                background-attachment: scroll;
+            }
+
+            .trending-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+            }
+
+            .trending-controls {
+                gap: 3px;
+            }
+
+            .trending-btn {
+                font-size: 8px;
+                padding: 4px 8px;
+            }
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .left-column {
+                gap: 15px;
+            }
+
+            .sidebar {
+                position: static;
+            }
+
+            .trending-title {
+                font-size: 0.75rem;
+            }
+
+            .trending-year {
+                font-size: 0.65rem;
+            }
+
+            .trending-rating {
+                font-size: 0.65rem;
+            }
+
+            .server-status {
+                position: static;
+                justify-content: center;
+                margin-top: 5px;
+            }
+
+            .button-row {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        /* Focus states for accessibility */
+        .send-btn:focus, .clear-btn:focus, .example-btn:focus {
+            outline: 2px solid #d4af37;
+            outline-offset: 2px;
+        }
+
+        .input-group input:focus {
+            outline: none;
+        }
+
+        /* Prevent any potential white space issues */
+        .trending-section:last-child {
+            margin-bottom: 20px;
+        }
+
+        /* Ensure proper text truncation on all browsers */
+        .trending-title {
+            -webkit-hyphens: auto;
+            -moz-hyphens: auto;
+            -ms-hyphens: auto;
+            hyphens: auto;
+        }
+
+        /* Login page */
+        .login-page {
+            max-width: 420px;
+            margin: 40px auto;
+            background: rgba(20, 15, 10, 0.95);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 18px;
+            padding: 20px;
+            color: #e6dcc6;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .login-page h2 { color: #d4af37; margin-bottom: 12px; text-align: center; }
+        .login-form { display: flex; flex-direction: column; gap: 10px; }
+        .login-form input {
+            padding: 10px 14px; border: 1px solid rgba(212,175,55,0.4); border-radius: 10px;
+            background: rgba(230,220,198,0.08); color: #e6dcc6;
+        }
+        .login-actions { display: flex; gap: 10px; justify-content: center; margin-top: 8px; }
+        .btn-primary { background: linear-gradient(135deg, #d4af37, #b8860b); color: #1a1410; border: 1px solid #ffd700; padding: 10px 14px; border-radius: 10px; cursor: pointer; }
+        .btn-secondary { background: transparent; color: #e6dcc6; border: 1px solid rgba(212,175,55,0.5); padding: 10px 14px; border-radius: 10px; cursor: pointer; }
+
+        /* Home helper card */
+        .info-card { background: rgba(20, 15, 10, 0.95); border: 1px solid rgba(212,175,55,0.3); border-radius: 18px; padding: 16px; color: #e6dcc6; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background: rgba(0,0,0,0.7); }
+        .modal-content { background: rgba(20, 15, 10, 0.98); margin: 40px auto; padding: 20px; border: 1px solid rgba(212,175,55,0.3); width: 90%; max-width: 900px; border-radius: 14px; color: #e6dcc6; }
+        .modal-close { float: right; cursor: pointer; color: #d4af37; font-size: 20px; }
+        .details-layout { display: grid; grid-template-columns: 180px 1fr; gap: 16px; }
+        .details-layout img { width: 180px; height: 270px; object-fit: cover; border-radius: 8px; border: 2px solid #d4af37; }
+        .details-meta h3 { color: #d4af37; margin: 0 0 8px 0; }
+        .details-meta p { margin: 4px 0; }
+    </style>
+</head>
+<body>
+    <div id="loginPage" class="login-page" style="display:none;">
+        <h2>🔐 Sign in to Cinemizer</h2>
+        <div class="login-form">
+            <input type="email" id="loginEmail" placeholder="Email" />
+            <input type="password" id="loginPassword" placeholder="Password" />
+        </div>
+        <div class="login-actions">
+            <button class="btn-primary" id="loginBtn">Sign In</button>
+            <button class="btn-secondary" id="signupBtn">Create Account</button>
+        </div>
+        <div id="loginMessage" style="margin-top:8px; font-size: 0.9rem;"></div>
+    </div>
+
+    <div class="container" id="homePage" style="display:none;">
+        <div class="header">
+            <h1>🎬 Cinemizer</h1>
+            <p>Your Ultimate AI-Powered Movie & TV Show Discovery Platform</p>
+        </div>
+
+        <div class="main-content">
+            <div class="left-column">
+                <div class="info-card" style="margin-bottom: 8px;">
+                    <h3 style="color:#d4af37; margin:0 0 6px 0;">About Cinemizer Chatbot</h3>
+                    <p style="opacity:0.85;">Ask detailed questions about any movie or show, and get concise overviews, notable cast and creators, ratings, and similar recommendations. Your conversations are saved to your account for later access.</p>
+                    <button class="btn-primary" id="openChatBtn" style="margin-top:8px;">Open Chatbot</button>
+                </div>
+                <div class="chat-section">
+                    <div class="chat-header">
+                        <h2>Chat with Cinemizer AI</h2>
+                        <div class="server-status">
+                            <div class="status-indicator" id="statusIndicator"></div>
+                            <span id="statusText">Checking...</span>
+                        </div>
+                        <button class="voice-toggle-btn" id="ttsToggle" title="Toggle voice responses">🔊 Voice</button>
+                    </div>
+
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message bot">
+                            <div class="message-avatar bot-avatar">🎭</div>
+                            <div class="message-bubble">
+                                Welcome to Cinemizer! I'm your AI-powered movie and TV show companion with access to real-time TMDB data. Ask me about any movie, get personalized recommendations, or discover trending content across different regions and genres!
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="typing-indicator" id="typingIndicator">
+                        <div class="message bot">
+                            <div class="message-avatar bot-avatar">🎭</div>
+                            <div class="message-bubble">
+                                <div class="typing-dots">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input">
+                        <div class="input-group">
+                            <input type="text" id="messageInput" placeholder="Ask about movies, get personalized recommendations, or discover new content...">
+                            <button class="mic-btn" id="micBtn" title="Speak">🎤</button>
+                            <button class="send-btn" id="sendBtn">📤</button>
+                            <button class="clear-btn" id="clearBtn">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trending-section">
+                    <div class="trending-header">
+                        <h3>🎬 Trending Movies</h3>
+                        <div class="trending-controls">
+                            <button class="trending-btn active" data-type="trending_movies_day">Today</button>
+                            <button class="trending-btn" data-type="trending_movies_week">This Week</button>
+                            <button class="trending-btn" data-type="popular_movies">Popular</button>
+                            <button class="trending-btn" data-type="top_rated_movies">Top Rated</button>
+                            <button class="trending-btn" data-type="now_playing">Now Playing</button>
+                            <button class="trending-btn" data-type="upcoming_movies">Upcoming</button>
+                        </div>
+                    </div>
+                    <div class="trending-grid" id="movieTrendingGrid">
+                        <!-- Movie trending content will be loaded here -->
+                    </div>
+                </div>
+
+                <div class="trending-section">
+                    <div class="trending-header">
+                        <h3>📺 Trending TV Shows</h3>
+                        <div class="trending-controls">
+                            <button class="trending-btn active" data-type="trending_tv_day">Today</button>
+                            <button class="trending-btn" data-type="trending_tv_week">This Week</button>
+                            <button class="trending-btn" data-type="popular_tv">Popular</button>
+                            <button class="trending-btn" data-type="top_rated_tv">Top Rated</button>
+                            <button class="trending-btn" data-type="airing_today">Airing Today</button>
+                            <button class="trending-btn" data-type="on_the_air">On Air</button>
+                        </div>
+                    </div>
+                    <div class="trending-grid" id="tvTrendingGrid">
+                        <!-- TV trending content will be loaded here -->
+                    </div>
+                </div>
+
+                <div class="trending-section">
+                    <div class="trending-header">
+                        <h3>🇮🇳 Indian Cinema</h3>
+                        <div class="trending-controls">
+                            <button class="trending-btn active" data-type="bollywood">Bollywood</button>
+                            <button class="trending-btn" data-type="south_indian">South Indian</button>
+                            <button class="trending-btn" data-type="regional">Regional</button>
+                        </div>
+                    </div>
+                    <div class="trending-grid" id="indiaTrendingGrid">
+                        <!-- India trending content will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="card">
+                    <h3>🔍 Quick Search</h3>
+                    <div class="movie-search-section">
+                        <div class="search-input-group">
+                            <input type="text" class="search-input" id="movieSearchInput" placeholder="Search movies & TV shows...">
+                            <button class="search-btn" id="movieSearchBtn">🔍</button>
+                        </div>
+                        <div id="searchMessage"></div>
+                    </div>
+
+                    <div class="quick-actions">
+                        <button class="quick-btn" onclick="searchTMDB('Dune: Part Two')">Dune: Part Two</button>
+                        <button class="quick-btn" onclick="searchTMDB('The Bear')">The Bear</button>
+                        <button class="quick-btn" onclick="searchTMDB('Oppenheimer')">Oppenheimer</button>
+                        <button class="quick-btn" onclick="searchTMDB('Wednesday')">Wednesday</button>
+                        <button class="quick-btn" onclick="searchTMDB('Avatar: The Way of Water')">Avatar 2</button>
+                        <button class="quick-btn" onclick="searchTMDB('House of the Dragon')">House of Dragon</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>💡 Ask Cinemizer</h3>
+                    <div class="examples">
+                        <button class="example-btn" data-text="Recommend me some action movies like John Wick">
+                            Recommend me action movies like John Wick
+                        </button>
+                        <button class="example-btn" data-text="What are the best sci-fi movies from 2024?">
+                            What are the best sci-fi movies from 2024?
+                        </button>
+                        <button class="example-btn" data-text="Show me popular Bollywood movies from 2024">
+                            Show me popular Bollywood movies from 2024
+                        </button>
+                        <button class="example-btn" data-text="I love psychological thrillers, suggest something">
+                            I love psychological thrillers, suggest something
+                        </button>
+                        <button class="example-btn" data-text="Find me a good romantic comedy to watch tonight">
+                            Find me a romantic comedy to watch tonight
+                        </button>
+                        <button class="example-btn" data-text="What are some trending Korean dramas?">
+                            What are some trending Korean dramas?
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card" id="myChatsCard" style="display:none;">
+                    <h3>🗂️ My Chats</h3>
+                    <div id="myChatsList" style="display:flex; flex-direction:column; gap:8px; max-height:300px; overflow:auto;"></div>
+                    <button class="btn-secondary" id="refreshChatsBtn" style="margin-top:8px;">Refresh</button>
+                </div>
+
+                <div class="card">
+                    <h3>🍥 Trending Anime</h3>
+                    <div class="trending-controls" style="margin-bottom: 15px;">
+                        <button class="trending-btn active" data-type="anime_top_rated">Top Rated</button>
+                        <button class="trending-btn" data-type="anime_airing">Currently Airing</button>
+                    </div>
+                    <div class="trending-grid" id="animeTrendingGrid" style="grid-template-columns: repeat(2, 1fr); max-height: 400px; overflow-y: auto;">
+                        <!-- Anime trending content will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div id="detailsModal" class="modal">
+        <div class="modal-content">
+            <span id="detailsClose" class="modal-close">✖</span>
+            <div class="details-layout">
+                <img id="detailsPoster" alt="Poster" />
+                <div class="details-meta">
+                    <h3 id="detailsTitle"></h3>
+                    <p id="detailsYear"></p>
+                    <p id="detailsGenres"></p>
+                    <p id="detailsOverview"></p>
+                    <p id="detailsRatings"></p>
+                    <div id="detailsLLM" style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(212,175,55,0.25);"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class CinemizerApp {
+            constructor() {
+                // Prefer reverse-proxied API when served via a web server
+                const isFile = window.location.protocol === 'file:';
+                this.apiBaseUrl = isFile ? 'http://localhost:8000' : `${window.location.origin}/api`;
+                // OMDB now proxied via backend; key is server-side
+                
+                // TMDB API Configuration
+                // TMDB is proxied via backend, no keys in frontend
+                this.tmdbBaseUrl = `${this.apiBaseUrl}/tmdb`;
+                this.tmdbImageBaseUrl = 'https://image.tmdb.org/t/p/w500';
+                
+                this.sessionId = this.generateUUID();
+                this.token = localStorage.getItem('cinemizer_token') || null;
+                this.chatMessages = document.getElementById('chatMessages');
+                this.messageInput = document.getElementById('messageInput');
+                this.sendBtn = document.getElementById('sendBtn');
+                this.clearBtn = document.getElementById('clearBtn');
+                this.micBtn = document.getElementById('micBtn');
+                this.statusIndicator = document.getElementById('statusIndicator');
+                this.statusText = document.getElementById('statusText');
+                this.typingIndicator = document.getElementById('typingIndicator');
+                this.ttsToggle = document.getElementById('ttsToggle');
+                this.voiceApiAvailable = false; // Deepgram availability
+                this.movieSearchInput = document.getElementById('movieSearchInput');
+                this.movieSearchBtn = document.getElementById('movieSearchBtn');
+                this.searchMessage = document.getElementById('searchMessage');
+                
+                // Multiple trending grids
+                this.movieTrendingGrid = document.getElementById('movieTrendingGrid');
+                this.tvTrendingGrid = document.getElementById('tvTrendingGrid');
+                this.animeTrendingGrid = document.getElementById('animeTrendingGrid');
+                this.indiaTrendingGrid = document.getElementById('indiaTrendingGrid');
+                
+                this.genres = {};
+                
+                this.initializeEventListeners();
+                this.checkServerStatus();
+                this.setupAutoResize();
+                this.loadGenres();
+                this.initVoice();
+                
+                // Decide initial page
+                if (this.token) {
+                    this.showHome();
+                } else {
+                    this.showLogin();
+                }
+            }
+
+            generateUUID() {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    const r = Math.random() * 16 | 0;
+                    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            }
+
+            async loadGenres() {
+                try {
+                    const response = await fetch(`${this.tmdbBaseUrl}/genre/movie/list`);
+                    const data = await response.json();
+                    
+                    data.genres.forEach(genre => {
+                        this.genres[genre.id] = genre.name;
+                    });
+                } catch (error) {
+                    console.error('Failed to load genres:', error);
+                }
+            }
+
+            async tmdbRequest(endpoint, params = {}) {
+                const url = new URL(`${this.tmdbBaseUrl}${endpoint}`);
+                Object.entries(params).forEach(([key, value]) => {
+                    if (value !== undefined && value !== null && value !== '') url.searchParams.append(key, value);
+                });
+
+                const response = await fetch(url, { headers: this.authHeaders() });
+
+                if (!response.ok) {
+                    throw new Error(`TMDB API error: ${response.status}`);
+                }
+
+                return response.json();
+            }
+
+            initializeEventListeners() {
+                // Page switches
+                this.loginPage = document.getElementById('loginPage');
+                this.homePage = document.getElementById('homePage');
+                this.loginEmail = document.getElementById('loginEmail');
+                this.loginPassword = document.getElementById('loginPassword');
+                this.loginBtn = document.getElementById('loginBtn');
+                this.signupBtn = document.getElementById('signupBtn');
+                this.loginMessage = document.getElementById('loginMessage');
+                this.openChatBtn = document.getElementById('openChatBtn');
+                this.myChatsCard = document.getElementById('myChatsCard');
+                this.myChatsList = document.getElementById('myChatsList');
+                this.refreshChatsBtn = document.getElementById('refreshChatsBtn');
+
+                if (this.loginBtn) this.loginBtn.addEventListener('click', () => this.login());
+                if (this.signupBtn) this.signupBtn.addEventListener('click', () => this.signup());
+                if (this.openChatBtn) this.openChatBtn.addEventListener('click', () => this.scrollToChat());
+                if (this.refreshChatsBtn) this.refreshChatsBtn.addEventListener('click', () => this.loadMyChats());
+                // Send message events
+                this.sendBtn.addEventListener('click', () => this.sendMessage());
+                this.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendMessage();
+                });
+
+                // Voice controls
+                if (this.micBtn) {
+                    this.micBtn.addEventListener('click', () => this.toggleMic());
+                }
+                if (this.ttsToggle) {
+                    this.ttsToggle.addEventListener('click', () => this.toggleTTS());
+                }
+
+                // Movie search events
+                this.movieSearchBtn.addEventListener('click', () => this.searchMovieFromInput());
+                this.movieSearchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.searchMovieFromInput();
+                });
+
+                // Trending buttons for all sections
+                document.querySelectorAll('.trending-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const section = e.target.closest('.trending-section, .card');
+                        const sectionButtons = section.querySelectorAll('.trending-btn');
+                        sectionButtons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        
+                        const type = btn.dataset.type;
+                        const gridId = section.querySelector('.trending-grid').id;
+                        
+                        if (gridId === 'movieTrendingGrid') {
+                            this.loadMovieTrending(type);
+                        } else if (gridId === 'tvTrendingGrid') {
+                            this.loadTVTrending(type);
+                        } else if (gridId === 'animeTrendingGrid') {
+                            this.loadAnimeTrending(type);
+                        } else if (gridId === 'indiaTrendingGrid') {
+                            this.loadIndiaTrending(type);
+                        }
+                    });
+                });
+
+                // Clear chat
+                this.clearBtn.addEventListener('click', () => this.clearChat());
+
+                // Example buttons
+                document.querySelectorAll('.example-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.messageInput.value = btn.dataset.text;
+                        this.sendMessage();
+                    });
+                });
+
+                // Auto-resize input
+                this.messageInput.addEventListener('input', this.autoResize.bind(this));
+            }
+
+            showLogin() {
+                this.loginPage.style.display = 'block';
+                this.homePage.style.display = 'none';
+            }
+
+            showHome() {
+                this.loginPage.style.display = 'none';
+                this.homePage.style.display = 'block';
+                // Load initial content for all sections
+                this.loadMovieTrending('trending_movies_day');
+                this.loadTVTrending('trending_tv_day');
+                this.loadAnimeTrending('anime_top_rated');
+                this.loadIndiaTrending('bollywood');
+                // Load my chats
+                this.loadMyChats();
+                document.getElementById('myChatsCard').style.display = 'block';
+            }
+
+            async loadMovieTrending(type) {
+                this.showLoadingCards(this.movieTrendingGrid, 5);
+
+                try {
+                    let endpoint;
+                    switch (type) {
+                        case 'trending_movies_day':
+                            endpoint = '/trending/movie/day';
+                            break;
+                        case 'trending_movies_week':
+                            endpoint = '/trending/movie/week';
+                            break;
+                        case 'popular_movies':
+                            endpoint = '/movie/popular';
+                            break;
+                        case 'top_rated_movies':
+                            endpoint = '/movie/top_rated';
+                            break;
+                        case 'now_playing':
+                            endpoint = '/movie/now_playing';
+                            break;
+                        case 'upcoming_movies':
+                            endpoint = '/movie/upcoming';
+                            break;
+                        default:
+                            endpoint = '/trending/movie/day';
+                    }
+
+                    const data = await this.tmdbRequest(endpoint);
+                    this.displayContent(this.movieTrendingGrid, data.results, 'movie', 5);
+
+                } catch (error) {
+                    console.error('Failed to load movie trending:', error);
+                    this.showErrorMessage(this.movieTrendingGrid, 'Failed to load movie trending');
+                }
+            }
+
+            async loadTVTrending(type) {
+                this.showLoadingCards(this.tvTrendingGrid, 5);
+
+                try {
+                    let endpoint;
+                    switch (type) {
+                        case 'trending_tv_day':
+                            endpoint = '/trending/tv/day';
+                            break;
+                        case 'trending_tv_week':
+                            endpoint = '/trending/tv/week';
+                            break;
+                        case 'popular_tv':
+                            endpoint = '/tv/popular';
+                            break;
+                        case 'top_rated_tv':
+                            endpoint = '/tv/top_rated';
+                            break;
+                        case 'airing_today':
+                            endpoint = '/tv/airing_today';
+                            break;
+                        case 'on_the_air':
+                            endpoint = '/tv/on_the_air';
+                            break;
+                        default:
+                            endpoint = '/trending/tv/day';
+                    }
+
+                    const data = await this.tmdbRequest(endpoint);
+                    this.displayContent(this.tvTrendingGrid, data.results, 'tv', 5);
+
+                } catch (error) {
+                    console.error('Failed to load TV trending:', error);
+                    this.showErrorMessage(this.tvTrendingGrid, 'Failed to load TV trending');
+                }
+            }
+
+            async loadAnimeTrending(type) {
+                this.showLoadingCards(this.animeTrendingGrid, 10);
+
+                try {
+                    let params = {};
+                    let endpoint = '/discover/tv';
+                    
+                    // Use anime genre ID (16) and Japanese language for anime content
+                    params.with_genres = '16'; // Animation genre
+                    params.with_original_language = 'ja'; // Japanese
+                    
+                    switch (type) {
+                        case 'anime_top_rated':
+                            params.sort_by = 'vote_average.desc';
+                            params['vote_count.gte'] = '100';
+                            break;
+                        case 'anime_airing':
+                            params.sort_by = 'popularity.desc';
+                            params['air_date.gte'] = new Date().toISOString().split('T')[0];
+                            break;
+                    }
+
+                    const data = await this.tmdbRequest(endpoint, params);
+                    this.displayContent(this.animeTrendingGrid, data.results, 'anime', 10);
+
+                } catch (error) {
+                    console.error('Failed to load anime trending:', error);
+                    this.showErrorMessage(this.animeTrendingGrid, 'Failed to load anime trending');
+                }
+            }
+
+            async loadIndiaTrending(type) {
+                this.showLoadingCards(this.indiaTrendingGrid, 5);
+
+                try {
+                    let params = {};
+                    let endpoint = '/discover/movie'; // Only movies for Indian content
+                    
+                    switch (type) {
+                        case 'bollywood':
+                            params.with_original_language = 'hi'; // Hindi only
+                            params.sort_by = 'popularity.desc';
+                            break;
+                        case 'south_indian':
+                            params.with_original_language = 'ta|te|ml|kn'; // Tamil, Telugu, Malayalam, Kannada
+                            params.sort_by = 'popularity.desc';
+                            break;
+                        case 'regional':
+                            params.with_original_language = 'bn|gu|mr|pa|or|as'; // Bengali, Gujarati, Marathi, Punjabi, Odia, Assamese
+                            params.sort_by = 'popularity.desc';
+                            break;
+                    }
+
+                    const data = await this.tmdbRequest(endpoint, params);
+                    this.displayContent(this.indiaTrendingGrid, data.results, 'india', 5);
+
+                } catch (error) {
+                    console.error('Failed to load India trending:', error);
+                    this.showErrorMessage(this.indiaTrendingGrid, 'Failed to load India trending');
+                }
+            }
+
+            showLoadingCards(grid, count) {
+                grid.innerHTML = '';
+                for (let i = 0; i < count; i++) {
+                    const loadingCard = document.createElement('div');
+                    loadingCard.className = 'loading-card';
+                    loadingCard.innerHTML = `
+                        <div class="loading-spinner"></div>
+                        <span>Loading...</span>
+                    `;
+                    grid.appendChild(loadingCard);
+                }
+            }
+
+            showErrorMessage(grid, message) {
+                grid.innerHTML = `<div class="loading-card"><span style="color: #ff6b6b;">${message}</span></div>`;
+            }
+
+            displayContent(grid, results, contentType, count) {
+                grid.innerHTML = '';
+                results.slice(0, count).forEach(item => {
+                    const card = this.createTMDBCard(item, contentType);
+                    grid.appendChild(card);
+                });
+            }
+
+            createTMDBCard(item, contentType) {
+                const card = document.createElement('div');
+                card.className = 'trending-card';
+                card.addEventListener('click', async () => {
+                    const title = item.title || item.name || '';
+                    const releaseDate = item.release_date || item.first_air_date || '';
+                    const year = releaseDate ? new Date(releaseDate).getFullYear() : '';
+                    const type = item.type === 'tv' || item.name ? 'TV show' : 'movie';
+                    const prompt = `Tell me about ${title}${year ? ' (' + year + ')' : ''} ${type ? '[' + type + ']' : ''}. Include overview, notable cast/creators, ratings, and 3 similar ${type === 'TV show' ? 'shows' : 'movies'}.`;
+                    const llmText = await this.fetchLLMSummary(prompt);
+                    this.openDetailsModal(item, llmText);
+                });
+
+                const poster = document.createElement('img');
+                poster.className = 'trending-poster';
+                poster.src = item.poster_path 
+                    ? `${this.tmdbImageBaseUrl}${item.poster_path}` 
+                    : 'https://via.placeholder.com/500x750?text=No+Image';
+                poster.alt = item.title || item.name;
+                poster.onerror = function() {
+                    this.src = 'https://via.placeholder.com/500x750?text=No+Image';
+                };
+
+                // Add popularity badge
+                if (item.popularity) {
+                    const badge = document.createElement('div');
+                    badge.className = 'popularity-badge';
+                    badge.textContent = Math.round(item.popularity);
+                    card.appendChild(badge);
+                }
+
+                // Add content type indicators
+                if (contentType === 'tv' || item.name) {
+                    const tvIndicator = document.createElement('div');
+                    tvIndicator.className = 'tv-show-indicator';
+                    tvIndicator.textContent = 'TV';
+                    card.appendChild(tvIndicator);
+                } else if (contentType === 'anime') {
+                    const animeIndicator = document.createElement('div');
+                    animeIndicator.className = 'anime-indicator';
+                    animeIndicator.textContent = 'ANIME';
+                    card.appendChild(animeIndicator);
+                } else if (contentType === 'india') {
+                    const indiaIndicator = document.createElement('div');
+                    indiaIndicator.className = 'india-indicator';
+                    indiaIndicator.textContent = 'IND';
+                    card.appendChild(indiaIndicator);
+                }
+
+                const info = document.createElement('div');
+                info.className = 'trending-info';
+
+                const title = document.createElement('div');
+                title.className = 'trending-title';
+                title.textContent = item.title || item.name;
+                title.title = item.title || item.name; // Tooltip for full title
+
+                const year = document.createElement('div');
+                year.className = 'trending-year';
+                const releaseDate = item.release_date || item.first_air_date;
+                const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : 'N/A';
+                const genreNames = item.genre_ids ? 
+                    item.genre_ids.slice(0, 1).map(id => this.genres[id]).filter(Boolean).join(', ') : '';
+                year.textContent = `${releaseYear} • ${genreNames || (item.name ? 'TV' : 'Movie')}`;
+
+                const rating = document.createElement('div');
+                rating.className = 'trending-rating';
+                
+                if (item.vote_average > 0) {
+                    const stars = this.getStarRating(item.vote_average);
+                    rating.innerHTML = `
+                        <span class="trending-stars">${stars}</span>
+                        <span class="trending-score">${item.vote_average.toFixed(1)}</span>
+                    `;
+                }
+
+                info.appendChild(title);
+                info.appendChild(year);
+                info.appendChild(rating);
+
+                card.appendChild(poster);
+                card.appendChild(info);
+
+                return card;
+            }
+
+            async searchMovieFromInput() {
+                const query = this.movieSearchInput.value.trim();
+                if (!query) return;
+                
+                await this.searchTMDB(query);
+                this.movieSearchInput.value = '';
+            }
+
+            async searchTMDB(query) {
+                this.movieSearchBtn.classList.add('loading');
+                this.searchMessage.innerHTML = '<span style="color: #d4af37;">Searching TMDB...</span>';
+
+                try {
+                    // Search both movies and TV shows
+                    const [movieData, tvData] = await Promise.all([
+                        this.tmdbRequest('/search/movie', { query: query }),
+                        this.tmdbRequest('/search/tv', { query: query })
+                    ]);
+
+                    const allResults = [
+                        ...movieData.results.map(item => ({ ...item, type: 'movie' })),
+                        ...tvData.results.map(item => ({ ...item, type: 'tv' }))
+                    ].sort((a, b) => b.popularity - a.popularity);
+
+                    if (allResults.length > 0) {
+                        const best = allResults[0];
+                        const title = best.title || best.name || '';
+                        const releaseDate = best.release_date || best.first_air_date || '';
+                        const year = releaseDate ? new Date(releaseDate).getFullYear() : '';
+                        const type = best.type === 'tv' || best.name ? 'TV show' : 'movie';
+                        const prompt = `Tell me about ${title}${year ? ' (' + year + ')' : ''} ${type ? '[' + type + ']' : ''}. Include overview, notable cast/creators, ratings, and 3 similar ${type === 'TV show' ? 'shows' : 'movies'}.`;
+                        const llmText = await this.fetchLLMSummary(prompt);
+                        this.openDetailsModal(best, llmText);
+                        this.searchMessage.innerHTML = '<span class="success-message">Found! Asking AI...</span>';
+                    } else {
+                        // Fallback to OMDB
+                        await this.askLLMAboutTitle(query);
+                    }
+                } catch (error) {
+                    await this.askLLMAboutTitle(query);
+                } finally {
+                    this.movieSearchBtn.classList.remove('loading');
+                    setTimeout(() => {
+                        this.searchMessage.innerHTML = '';
+                    }, 3000);
+                }
+            }
+
+            async askLLMAboutItem(item) {
+                const title = item.title || item.name || '';
+                const releaseDate = item.release_date || item.first_air_date || '';
+                const year = releaseDate ? new Date(releaseDate).getFullYear() : '';
+                const type = item.type === 'tv' || item.name ? 'TV show' : 'movie';
+                const prompt = `Tell me about ${title}${year ? ' (' + year + ')' : ''} ${type ? '[' + type + ']' : ''}. Include a concise overview, notable cast/creators, ratings, and 3 similar ${type === 'TV show' ? 'shows' : 'movies'}.`;
+                await this.sendMessageText(prompt);
+            }
+
+            async askLLMAboutTitle(title) {
+                const prompt = `Tell me about ${title}. Include a concise overview, notable cast/creators, ratings, and 3 similar titles.`;
+                await this.sendMessageText(prompt);
+            }
+
+            async fetchLLMSummary(prompt) {
+                try {
+                    const response = await fetch(`${this.apiBaseUrl}/chat`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
+                        body: JSON.stringify({ message: prompt, session_id: this.sessionId }),
+                        timeout: 30000
+                    });
+                    if (response.ok) {
+                        const result = await response.json();
+                        // Save as ContentSummary (card) via a light-weight endpoint if exposed in future
+                        return result.response;
+                    }
+                } catch (e) {}
+                return 'Could not retrieve AI summary at this time.';
+            }
+
+            async searchOMDB(query) {
+                try {
+                    const response = await fetch(`${this.apiBaseUrl}/omdb?t=${encodeURIComponent(query)}&plot=full`, { headers: this.authHeaders() });
+                    const data = await response.json();
+
+                    if (data.Response === 'True') {
+                        await this.askLLMAboutTitle(data.Title);
+                        this.searchMessage.innerHTML = '<span class="success-message">Found! Asking AI...</span>';
+                    } else {
+                        this.searchMessage.innerHTML = `<span class="error-message">${data.Error || 'Movie not found'}</span>`;
+                    }
+                } catch (error) {
+                    this.searchMessage.innerHTML = '<span class="error-message">Search failed. Please try again.</span>';
+                }
+            }
+
+            createTMDBMovieCard(data) {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'movie-card';
+                cardDiv.style.maxWidth = '100%';
+
+                const posterImg = document.createElement('img');
+                posterImg.className = 'movie-poster-large';
+                posterImg.src = data.poster_path 
+                    ? `${this.tmdbImageBaseUrl}${data.poster_path}` 
+                    : 'https://via.placeholder.com/70x105?text=No+Image';
+                posterImg.alt = data.title || data.name;
+                posterImg.onerror = function() {
+                    this.src = 'https://via.placeholder.com/70x105?text=No+Image';
+                };
+
+                const detailsDiv = document.createElement('div');
+                detailsDiv.className = 'movie-details';
+                detailsDiv.style.flex = '1';
+
+                const title = document.createElement('h4');
+                const releaseDate = data.release_date || data.first_air_date;
+                const year = releaseDate ? new Date(releaseDate).getFullYear() : 'N/A';
+                title.textContent = `${data.title || data.name} (${year})`;
+
+                const type = document.createElement('p');
+                type.innerHTML = `<strong>Type:</strong> ${data.type === 'tv' ? 'TV Show' : 'Movie'}`;
+
+                const genres = document.createElement('p');
+                if (data.genre_ids && data.genre_ids.length > 0) {
+                    const genreNames = data.genre_ids.map(id => this.genres[id]).filter(Boolean).join(', ');
+                    genres.innerHTML = `<strong>Genres:</strong> ${genreNames}`;
+                } else {
+                    genres.innerHTML = `<strong>Genres:</strong> N/A`;
+                }
+
+                const overview = document.createElement('p');
+                const plotText = data.overview || 'No overview available.';
+                overview.innerHTML = `<strong>Overview:</strong> ${plotText.length > 150 ? plotText.substring(0, 150) + '...' : plotText}`;
+
+                const popularity = document.createElement('p');
+                popularity.innerHTML = `<strong>Popularity:</strong> ${Math.round(data.popularity || 0)}`;
+
+                const ratingDiv = document.createElement('div');
+                ratingDiv.className = 'movie-rating';
+                
+                if (data.vote_average > 0) {
+                    const stars = this.getStarRating(data.vote_average);
+                    ratingDiv.innerHTML = `
+                        <span class="rating-stars">${stars}</span>
+                        <span style="color: #d4af37; font-weight: bold;">${data.vote_average.toFixed(1)}/10</span>
+                        <span style="color: #e6dcc6; margin-left: 8px; font-size: 0.75rem;">(${data.vote_count} votes)</span>
+                    `;
+                }
+
+                detailsDiv.appendChild(title);
+                detailsDiv.appendChild(type);
+                detailsDiv.appendChild(genres);
+                detailsDiv.appendChild(overview);
+                detailsDiv.appendChild(popularity);
+                detailsDiv.appendChild(ratingDiv);
+
+                cardDiv.appendChild(posterImg);
+                cardDiv.appendChild(detailsDiv);
+
+                return cardDiv;
+            }
+
+            setupAutoResize() {
+                this.messageInput.style.height = 'auto';
+                this.messageInput.style.height = this.messageInput.scrollHeight + 'px';
+            }
+
+            autoResize() {
+                this.messageInput.style.height = 'auto';
+                this.messageInput.style.height = this.messageInput.scrollHeight + 'px';
+            }
+
+            async checkServerStatus() {
+                try {
+                    const response = await fetch(`${this.apiBaseUrl}/health`, {
+                        method: 'GET',
+                        timeout: 5000
+                    });
+                    
+                    if (response.ok) {
+                        this.updateServerStatus(true, 'Online');
+                    } else {
+                        this.updateServerStatus(false, `Error: ${response.status}`);
+                    }
+                } catch (error) {
+                    this.updateServerStatus(false, 'Offline');
+                }
+            }
+
+            updateServerStatus(isOnline, message) {
+                this.statusIndicator.className = `status-indicator ${isOnline ? '' : 'offline'}`;
+                this.statusText.textContent = message;
+            }
+
+            displayMovieCard(movieData) {
+                const movieCard = this.createMovieCard(movieData);
+                this.addCustomMessage(movieCard, 'bot');
+            }
+
+            createMovieCard(data) {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'movie-card';
+
+                const posterImg = document.createElement('img');
+                posterImg.className = 'movie-poster-large';
+                posterImg.src = data.Poster !== 'N/A' ? data.Poster : 'https://via.placeholder.com/70x105?text=No+Image';
+                posterImg.alt = data.Title;
+                posterImg.onerror = function() {
+                    this.src = 'https://via.placeholder.com/70x105?text=No+Image';
+                };
+
+                const detailsDiv = document.createElement('div');
+                detailsDiv.className = 'movie-details';
+
+                const title = document.createElement('h4');
+                title.textContent = `${data.Title} (${data.Year})`;
+
+                const genre = document.createElement('p');
+                genre.innerHTML = `<strong>Genre:</strong> ${data.Genre}`;
+
+                const director = document.createElement('p');
+                director.innerHTML = `<strong>Director:</strong> ${data.Director}`;
+
+                const runtime = document.createElement('p');
+                runtime.innerHTML = `<strong>Runtime:</strong> ${data.Runtime}`;
+
+                const plot = document.createElement('p');
+                plot.innerHTML = `<strong>Plot:</strong> ${data.Plot.length > 150 ? data.Plot.substring(0, 150) + '...' : data.Plot}`;
+
+                const ratingDiv = document.createElement('div');
+                ratingDiv.className = 'movie-rating';
+                
+                if (data.imdbRating !== 'N/A') {
+                    const stars = this.getStarRating(parseFloat(data.imdbRating));
+                    ratingDiv.innerHTML = `
+                        <span class="rating-stars">${stars}</span>
+                        <span style="color: #d4af37; font-weight: bold;">${data.imdbRating}/10</span>
+                    `;
+                }
+
+                detailsDiv.appendChild(title);
+                detailsDiv.appendChild(genre);
+                detailsDiv.appendChild(director);
+                detailsDiv.appendChild(runtime);
+                detailsDiv.appendChild(plot);
+                detailsDiv.appendChild(ratingDiv);
+
+                cardDiv.appendChild(posterImg);
+                cardDiv.appendChild(detailsDiv);
+
+                return cardDiv;
+            }
+
+            getStarRating(rating) {
+                const fullStars = Math.floor(rating / 2);
+                const halfStar = (rating / 2) % 1 >= 0.5 ? 1 : 0;
+                const emptyStars = 5 - fullStars - halfStar;
+                
+                return '★'.repeat(fullStars) + 
+                       (halfStar ? '☆' : '') + 
+                       '☆'.repeat(emptyStars);
+            }
+
+            async sendMessage() {
+                const message = this.messageInput.value.trim();
+                if (!message) return;
+
+                // Add user message to chat
+                this.addMessage(message, 'user');
+                this.messageInput.value = '';
+                this.autoResize();
+
+                // Show typing indicator
+                this.showTypingIndicator();
+
+                try {
+                    const response = await fetch(`${this.apiBaseUrl}/chat`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...this.authHeaders()
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            session_id: this.sessionId
+                        }),
+                        timeout: 30000
+                    });
+
+                    this.hideTypingIndicator();
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        this.addMessage(result.response, 'bot');
+                    } else {
+                        const errorText = await response.text();
+                        this.addMessage(`Error: ${response.status} - ${errorText}`, 'bot', true);
+                    }
+                } catch (error) {
+                    this.hideTypingIndicator();
+                    let errorMessage = 'Unexpected error occurred.';
+                    
+                    if (error.name === 'TypeError') {
+                        errorMessage = 'Cannot connect to the AI server. Make sure your FastAPI server is running on localhost:8000';
+                    } else if (error.name === 'TimeoutError') {
+                        errorMessage = 'Request timed out. The AI server might be busy.';
+                    }
+                    
+                    this.addMessage(errorMessage, 'bot', true);
+                }
+            }
+
+            async sendMessageText(text) {
+                if (!text) return;
+                this.addMessage(text, 'user');
+                this.showTypingIndicator();
+                try {
+                    const response = await fetch(`${this.apiBaseUrl}/chat`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
+                        body: JSON.stringify({ message: text, session_id: this.sessionId }),
+                        timeout: 30000
+                    });
+                    this.hideTypingIndicator();
+                    if (response.ok) {
+                        const result = await response.json();
+                        this.addMessage(result.response, 'bot');
+                    } else {
+                        const errorText = await response.text();
+                        this.addMessage(`Error: ${response.status} - ${errorText}`, 'bot', true);
+                    }
+                } catch (error) {
+                    this.hideTypingIndicator();
+                    let errorMessage = 'Unexpected error occurred.';
+                    if (error.name === 'TypeError') {
+                        errorMessage = 'Cannot connect to the AI server. Make sure your FastAPI server is running on localhost:8000';
+                    } else if (error.name === 'TimeoutError') {
+                        errorMessage = 'Request timed out. The AI server might be busy.';
+                    }
+                    this.addMessage(errorMessage, 'bot', true);
+                }
+            }
+
+            isMovieSearchQuery(message) {
+                const searchKeywords = ['search for', 'find movie', 'look up', 'tell me about', 'information about'];
+                return searchKeywords.some(keyword => message.toLowerCase().includes(keyword));
+            }
+
+            extractMovieTitle(message) {
+                // Simple extraction - look for movie title after common phrases
+                const patterns = [
+                    /search for (.*?)(?:\s|$)/i,
+                    /tell me about (.*?)(?:\s|$)/i,
+                    /find movie (.*?)(?:\s|$)/i,
+                    /look up (.*?)(?:\s|$)/i,
+                    /information about (.*?)(?:\s|$)/i
+                ];
+
+                for (const pattern of patterns) {
+                    const match = message.match(pattern);
+                    if (match) {
+                        return match[1].trim();
+                    }
+                }
+                return null;
+            }
+
+            authHeaders() {
+                const headers = {};
+                if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
+                return headers;
+            }
+
+            async login() {
+                const email = (this.loginEmail.value || '').trim();
+                const password = (this.loginPassword.value || '').trim();
+                if (!email || !password) { this.loginMessage.textContent = 'Enter email and password'; this.loginMessage.style.color = '#ff6b6b'; return; }
+                try {
+                    const form = new URLSearchParams();
+                    form.append('username', email);
+                    form.append('password', password);
+                    const resp = await fetch(`${this.apiBaseUrl}/auth/token`, { method: 'POST', body: form });
+                    if (!resp.ok) {
+                        const text = await resp.text();
+                        this.loginMessage.textContent = `Login failed: ${text}`; this.loginMessage.style.color = '#ff6b6b';
+                        return;
+                    }
+                    const data = await resp.json();
+                    this.token = data.access_token;
+                    localStorage.setItem('cinemizer_token', this.token);
+                    this.loginMessage.textContent = 'Logged in!'; this.loginMessage.style.color = '#4caf50';
+                    this.showHome();
+                } catch (e) {
+                    this.loginMessage.textContent = 'Network error during login'; this.loginMessage.style.color = '#ff6b6b';
+                }
+            }
+
+            async signup() {
+                const email = (this.loginEmail.value || '').trim();
+                const password = (this.loginPassword.value || '').trim();
+                if (!email || !password) { this.loginMessage.textContent = 'Enter email and password'; this.loginMessage.style.color = '#ff6b6b'; return; }
+                try {
+                    const resp = await fetch(`${this.apiBaseUrl}/auth/signup`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    if (!resp.ok) {
+                        const text = await resp.text();
+                        this.loginMessage.textContent = `Signup failed: ${text}`; this.loginMessage.style.color = '#ff6b6b';
+                        return;
+                    }
+                    const data = await resp.json();
+                    this.token = data.access_token;
+                    localStorage.setItem('cinemizer_token', this.token);
+                    this.loginMessage.textContent = 'Account created!'; this.loginMessage.style.color = '#4caf50';
+                    this.showHome();
+                } catch (e) {
+                    this.loginMessage.textContent = 'Network error during signup'; this.loginMessage.style.color = '#ff6b6b';
+                }
+            }
+
+            scrollToChat() {
+                document.querySelector('.chat-section').scrollIntoView({ behavior: 'smooth' });
+            }
+
+            openDetailsModal(item, llmText) {
+                const modal = document.getElementById('detailsModal');
+                const closeBtn = document.getElementById('detailsClose');
+                const poster = document.getElementById('detailsPoster');
+                const title = document.getElementById('detailsTitle');
+                const year = document.getElementById('detailsYear');
+                const genres = document.getElementById('detailsGenres');
+                const overview = document.getElementById('detailsOverview');
+                const ratings = document.getElementById('detailsRatings');
+                const llm = document.getElementById('detailsLLM');
+
+                poster.src = item.poster_path ? `${this.tmdbImageBaseUrl}${item.poster_path}` : 'https://via.placeholder.com/180x270?text=No+Image';
+                title.textContent = item.title || item.name;
+                const releaseDate = item.release_date || item.first_air_date || '';
+                year.textContent = `Year: ${releaseDate ? new Date(releaseDate).getFullYear() : 'N/A'}`;
+                const genreName = (item.genre_ids && item.genre_ids.length > 0) ? (this.genres[item.genre_ids[0]] || '') : '';
+                genres.textContent = `Genres: ${genreName || (item.name ? 'TV' : 'Movie')}`;
+                overview.textContent = `Overview: ${item.overview || 'N/A'}`;
+                ratings.textContent = `Rating: ${item.vote_average ? item.vote_average.toFixed(1) : 'N/A'}`;
+                llm.textContent = llmText || '';
+
+                modal.style.display = 'block';
+                closeBtn.onclick = () => { modal.style.display = 'none'; };
+                modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+            }
+
+            async loadMyChats() {
+                if (!this.token) return;
+                try {
+                    const resp = await fetch(`${this.apiBaseUrl}/sessions`, { headers: this.authHeaders() });
+                    if (!resp.ok) return;
+                    const data = await resp.json();
+                    const sessions = data.sessions || [];
+                    this.myChatsList.innerHTML = '';
+                    if (sessions.length === 0) {
+                        this.myChatsList.innerHTML = '<div style="opacity:0.8;">No chats yet.</div>';
+                        return;
+                    }
+                    sessions.forEach(s => {
+                        const btn = document.createElement('button');
+                        btn.className = 'btn-secondary';
+                        btn.style.textAlign = 'left';
+                        btn.textContent = `${s.title || 'Session'} • ${new Date(s.created_at).toLocaleString()}`;
+                        btn.onclick = async () => {
+                            try {
+                                const r = await fetch(`${this.apiBaseUrl}/sessions/${s.session_id}/messages`, { headers: this.authHeaders() });
+                                if (!r.ok) return;
+                                const j = await r.json();
+                                // Render messages into chat area
+                                this.chatMessages.innerHTML = '';
+                                (j.messages || []).forEach(m => {
+                                    this.addMessage(m.content, m.role === 'user' ? 'user' : 'bot');
+                                });
+                                this.scrollToChat();
+                            } catch {}
+                        };
+                        this.myChatsList.appendChild(btn);
+                    });
+                } catch {}
+            }
+            addMessage(content, sender, isError = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                
+                const avatar = document.createElement('div');
+                avatar.className = `message-avatar ${sender}-avatar`;
+                avatar.textContent = sender === 'user' ? '👤' : '🎭';
+                
+                const bubble = document.createElement('div');
+                bubble.className = 'message-bubble';
+                bubble.textContent = content;
+                
+                if (isError) {
+                    bubble.style.background = 'rgba(139, 69, 19, 0.8)';
+                    bubble.style.borderColor = 'rgba(212, 175, 55, 0.5)';
+                    bubble.style.color = '#ffcccb';
+                }
+                
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(bubble);
+                
+                this.chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+
+                if (sender === 'bot') {
+                    this.speak(content);
+                }
+            }
+
+            addCustomMessage(customElement, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                
+                const avatar = document.createElement('div');
+                avatar.className = `message-avatar ${sender}-avatar`;
+                avatar.textContent = sender === 'user' ? '👤' : '🎭';
+                
+                const bubble = document.createElement('div');
+                bubble.className = 'message-bubble';
+                bubble.style.padding = '10px';
+                bubble.appendChild(customElement);
+                
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(bubble);
+                
+                this.chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+
+            showTypingIndicator() {
+                this.typingIndicator.style.display = 'block';
+                this.scrollToBottom();
+            }
+
+            hideTypingIndicator() {
+                this.typingIndicator.style.display = 'none';
+            }
+
+            scrollToBottom() {
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+
+            async clearChat() {
+                try {
+                    await fetch(`${this.apiBaseUrl}/sessions/${this.sessionId}`, {
+                        method: 'DELETE',
+                        headers: this.authHeaders()
+                    });
+                } catch (error) {
+                    // Ignore errors when clearing session
+                }
+
+                // Clear chat messages except the initial bot message
+                const messages = this.chatMessages.querySelectorAll('.message');
+                messages.forEach((message, index) => {
+                    if (index > 0) message.remove();
+                });
+
+                // Generate new session ID
+                this.sessionId = this.generateUUID();
+            }
+
+            async initVoice() {
+                this.ttsEnabled = false;
+                this.recognition = null;
+                // Check server voice availability
+                try {
+                    const resp = await fetch(`${this.apiBaseUrl}/voice/health`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        this.voiceApiAvailable = !!(data && data.tts && data.stt);
+                    }
+                } catch (_) { this.voiceApiAvailable = false; }
+
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (SpeechRecognition) {
+                    this.recognition = new SpeechRecognition();
+                    this.recognition.lang = 'en-US';
+                    this.recognition.interimResults = false;
+                    this.recognition.maxAlternatives = 1;
+                    this.recognition.onresult = async (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        this.messageInput.value = transcript;
+                        await this.sendMessage();
+                    };
+                    this.recognition.onend = () => {
+                        if (this.micBtn) this.micBtn.classList.remove('listening');
+                    };
+                    this.recognition.onerror = () => {
+                        if (this.micBtn) this.micBtn.classList.remove('listening');
+                    };
+                }
+            }
+
+            toggleMic() {
+                if (!this.recognition) {
+                    alert('Speech recognition is not supported in this browser.');
+                    return;
+                }
+                if (this.micBtn.classList.contains('listening')) {
+                    this.recognition.stop();
+                    this.micBtn.classList.remove('listening');
+                } else {
+                    this.micBtn.classList.add('listening');
+                    this.recognition.start();
+                }
+            }
+
+            toggleTTS() {
+                this.ttsEnabled = !this.ttsEnabled;
+                if (this.ttsToggle) {
+                    this.ttsToggle.classList.toggle('active', this.ttsEnabled);
+                }
+                if (!this.ttsEnabled && window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                }
+            }
+
+            async speak(text) {
+                if (!this.ttsEnabled || !text) return;
+                // Prefer server TTS if available; fallback to browser speechSynthesis
+                if (this.voiceApiAvailable) {
+                    try {
+                        const resp = await fetch(`${this.apiBaseUrl}/voice/tts`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ text })
+                        });
+                        if (resp.ok) {
+                            const blob = await resp.blob();
+                            const url = URL.createObjectURL(blob);
+                            const audio = new Audio(url);
+                            audio.play().catch(() => {});
+                            return;
+                        }
+                    } catch (_) { /* fallthrough to browser */ }
+                }
+                if ('speechSynthesis' in window) {
+                    try {
+                        window.speechSynthesis.cancel();
+                        const utterance = new SpeechSynthesisUtterance(text);
+                        utterance.rate = 1;
+                        utterance.pitch = 1;
+                        utterance.volume = 1;
+                        const voices = window.speechSynthesis.getVoices();
+                        const preferred = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('female')) || voices[0];
+                        if (preferred) utterance.voice = preferred;
+                        window.speechSynthesis.speak(utterance);
+                    } catch (_) { /* ignore */ }
+                }
+            }
+        }
+
+        // Global function for quick search buttons
+        function searchTMDB(title) {
+            if (window.cinemizerApp) {
+                window.cinemizerApp.searchTMDB(title);
+            }
+        }
+
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.cinemizerApp = new CinemizerApp();
+        });
+
+        // Add entrance animation
+        window.addEventListener('load', () => {
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 0.8s ease-in-out';
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+            }, 200);
+        });
+    </script>
+</body>
+</html>

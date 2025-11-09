@@ -1,0 +1,58 @@
+services:
+  # Backend API
+  - type: web
+    name: movie-companion-backend
+    env: python
+    repo: https://github.com/your-username/movie-companion.git
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 2
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: TMDB_API_KEY
+        sync: false
+      - key: TMDB_BEARER_TOKEN
+        sync: false
+      - key: OMDB_API_KEY
+        sync: false
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: DEEPGRAM_API_KEY
+        sync: false
+      - key: AUTH_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: movie-companion-db
+          property: connectionString
+
+  # Frontend
+  - type: web
+    name: movie-companion-frontend
+    env: node
+    repo: https://github.com/your-username/movie-companion.git
+    rootDir: frontend-next
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: NEXT_PUBLIC_API_BASE_URL
+        fromService:
+          type: web
+          name: movie-companion-backend
+          property: host
+
+# Database
+databases:
+  - name: movie-companion-db
+    databaseName: moviecompanion
+    user: movieuser
+    plan: starter

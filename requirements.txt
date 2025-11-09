@@ -13,4 +13,11 @@ sentence-transformers
 pinecone
 tqdm
 chromadb
-gradio
+fastapi
+uvicorn
+httpx
+aiohttp
+SQLAlchemy
+passlib[bcrypt]
+python-jose[cryptography]
+pydantic
