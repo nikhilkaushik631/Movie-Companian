@@ -355,14 +355,21 @@ class MovieChatbot:
             k=self.chat_history_limit
         )
 
-        # Simplified validation prompt for faster processing
+        # Enhanced validation prompt with follow-up query detection
         validation_prompt_with_history = ChatPromptTemplate.from_messages([
             SystemMessagePromptTemplate.from_template(
-                """You are a Movie Query Validator. Determine if a query relates to movies/TV.
-                Return ONLY "yes" or "no". Be quick and decisive."""
+                """You are a Movie Query Validator. Determine if a query relates to movies/TV shows OR is a follow-up question to a previous movie/TV conversation.
+
+Rules:
+1. If the query explicitly mentions movies, TV shows, actors, directors, genres, or entertainment content → "yes"
+2. If the query is a follow-up question (like "what about", "and that one?", "tell me more", "who directed it?") and the conversation history shows movie/TV discussion → "yes"
+3. If the query has pronouns (it, that, those, etc.) referring to movies/shows from conversation history → "yes"
+4. If the query is completely unrelated to movies/TV and NOT a follow-up → "no"
+
+Return ONLY "yes" or "no". Be quick and decisive."""
             ),
-            MessagesPlaceholder(variable_name="chat_history"), 
-            HumanMessagePromptTemplate.from_template("Query: {query}\nMovie/TV related?")
+            MessagesPlaceholder(variable_name="chat_history"),
+            HumanMessagePromptTemplate.from_template("Query: {query}\nMovie/TV related or follow-up?")
         ])
 
         # Use fast models for validation (simple task)
@@ -422,36 +429,52 @@ class MovieChatbot:
         pass
 
     def _smart_validation_bypass(self, query: str) -> Optional[bool]:
-        """Fast keyword-based validation bypass for obvious movie queries"""
+        """Minimal keyword-based bypass - only for very obvious non-movie queries
+
+        LLM validation is now the primary method to handle:
+        - Movie/TV related queries
+        - Follow-up questions based on conversation history
+        - Contextual references to previous movie discussions
+        """
         query_lower = query.lower()
-        
-        # If contains movie keywords, likely valid
-        if any(keyword in query_lower for keyword in self._movie_keywords):
-            self._performance_stats['bypass_hits'] += 1
-            return True
-            
-        # If asking about non-entertainment topics, likely invalid
-        non_movie_indicators = ['weather', 'politics', 'math', 'science', 'cooking', 'recipe']
-        if any(indicator in query_lower for indicator in non_movie_indicators):
+
+        # Only bypass for obviously unrelated topics (very conservative)
+        # Don't bypass for potential follow-ups or ambiguous queries
+        obvious_non_movie = ['weather forecast', 'temperature today', 'math problem',
+                            'solve equation', 'cooking recipe', 'how to cook']
+        if any(indicator in query_lower for indicator in obvious_non_movie):
             self._performance_stats['bypass_hits'] += 1
             return False
-            
-        return None  # Need LLM validation
+
+        # For everything else (including follow-ups), use LLM validation
+        return None
 
     async def validate_movie_query(self, query: str) -> bool:
-        """Optimized validation with caching and smart bypass"""
-        # Check cache first
-        cached_result = self._validation_cache.get(query)
+        """LLM-first validation with conversation history for follow-up detection
+
+        This method prioritizes LLM validation to properly handle:
+        - Direct movie/TV queries
+        - Follow-up questions based on conversation history
+        - Contextual references and pronouns
+        """
+        # Get conversation history length for context-aware caching
+        chat_history = self.memory.load_memory_variables({}).get('chat_history', [])
+        history_length = len(chat_history)
+
+        # Create context-aware cache key (query + history presence)
+        cache_key = f"{query}__hist_{min(history_length, 5)}"  # Cap at 5 to prevent cache bloat
+        cached_result = self._validation_cache.get(cache_key)
         if cached_result is not None:
             return cached_result
-        
-        # Try smart bypass
+
+        # Check for obviously unrelated queries (minimal bypass)
         bypass_result = self._smart_validation_bypass(query)
         if bypass_result is not None:
-            self._validation_cache.set(query, bypass_result)
+            self._validation_cache.set(cache_key, bypass_result)
             return bypass_result
-        
-        # Fallback to LLM validation with load balancing
+
+        # PRIMARY: LLM validation with conversation history
+        # This handles follow-ups, contextual queries, and direct movie questions
         try:
             self._performance_stats['fast_model_usage'] += 1
             # Get a fresh fast model for validation
@@ -462,20 +485,26 @@ class MovieChatbot:
                 memory=self.memory,
                 output_key="validation_result"
             )
-            
+
             result = await validation_chain.ainvoke({"query": query})
             validation_result = result.get("validation_result", "").strip().lower()
             positive_indicators = ["yes", "y", "true", "valid", "related"]
             is_valid = any(indicator in validation_result for indicator in positive_indicators)
-            
-            # Cache result
-            self._validation_cache.set(query, is_valid)
+
+            # Cache result with context-aware key
+            self._validation_cache.set(cache_key, is_valid)
+
+            # Log validation decision for debugging
+            decision_type = "follow-up" if history_length > 0 and is_valid else "direct"
+            print(f"Validation: '{query[:50]}...' → {is_valid} (type: {decision_type}, history: {history_length} msgs)")
+
             return is_valid
         except Exception as e:
-            print(f"Error in validation: {e}")
+            print(f"Error in LLM validation: {e}")
             # Report error to load balancer
             self.load_balancer.report_error("fast_model")
-            return True  # Default to valid for better UX
+            # If there's conversation history, assume it's a valid follow-up
+            return True if history_length > 0 else True  # Default to valid for better UX
 
     async def rewrite_query(self, query: str) -> str:
         """Optimized query rewriting with load balanced quality models"""
