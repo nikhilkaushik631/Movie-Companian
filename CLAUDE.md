@@ -75,14 +75,22 @@ docker-compose -f docker-compose.production.yml up --build
 
 **Core System Files:**
 - `main.py` - FastAPI application, authentication (JWT), database (SQLAlchemy), session management, API endpoints
-- `Movie_Companian.py` - Main chatbot orchestrator with `APILoadBalancer` for multi-LLM routing
-- `Multi_Agent.py` - LangGraph-based multi-agent Q&A system with 5 specialized agents
+- `Movie_Companian.py` - Main chatbot orchestrator with:
+  - `APILoadBalancer` for multi-LLM routing
+  - Greeting detection and friendly introductions
+  - LLM-based query validation with conversation history support
+  - Follow-up query detection using context
+- `Multi_Agent.py` - LangGraph-based multi-agent Q&A system with temporal pattern detection
 - `Content_Recommend.py` - RAG-based recommendation engine using Pinecone embeddings
 - `QA.py` - Embeddings-based Q&A using plots and Wikipedia data
 
 **Supporting Modules:**
 - `utils.py` - `LRUCache`, `APIRateLimiter` utilities
-- `summary_generator.py` - AI-powered summaries for trending content
+- `summary_generator.py` - AI-powered summaries with:
+  - Enhanced prompts to prevent LLM from asking questions
+  - Response validation to filter out question patterns
+  - Increased token limit (250) for better quality
+  - Cache validation before saving
 - `trending_summaries.py` - Trending content management
 - `tts.py` - Text-to-speech functionality
 
@@ -94,10 +102,16 @@ docker-compose -f docker-compose.production.yml up --build
 
 LangGraph workflow with 5 specialized agents:
 1. **Query Database Agent** - Searches Pinecone embeddings
-2. **Analyze Query Agent** - Determines if web search needed
+2. **Analyze Query Agent** - Determines if web search needed with temporal pattern detection
 3. **Web Search Agent** - DuckDuckGo search + scraping
 4. **Content Extraction Agent** - Extracts relevant info from web results
 5. **Response Synthesis Agent** - Generates final response
+
+**Temporal Pattern Detection:**
+- Automatically routes queries about recent content to web search instead of database
+- Detects year patterns (2020-2029) and temporal phrases (this month, last week, this year, etc.)
+- Ensures up-to-date results for queries like "movies from this month" or "2024 releases"
+- Patterns detected: year ranges, month names, temporal references (see `Multi_Agent.py:158-171`)
 
 ### Frontend Structure (Next.js 14)
 
@@ -115,12 +129,17 @@ LangGraph workflow with 5 specialized agents:
 
 **Main Endpoints:**
 - `POST /chat` - Chat with AI (requires authentication)
+  - Handles greetings with friendly introductions
+  - Validates queries using LLM with conversation history
+  - Detects follow-up questions based on context
 - `POST /signup` - User registration
 - `POST /token` - Login (returns JWT)
 - `GET /health` - Health check
 - `DELETE /sessions/{session_id}` - Clear chat session
 - `GET /trending` - Get trending content with AI summaries
 - `GET /search` - Search movies/shows
+- `DELETE /summary/cache/clear` - Clear all cached summaries from database
+- `GET /tmdb/{full_path}` - Proxy TMDB API endpoints with caching
 
 ### LLM Load Balancing
 
@@ -144,6 +163,35 @@ JWT-based authentication with:
 - `SECRET_KEY` and `ALGORITHM` environment variables (see `main.py:147-148`)
 - OAuth2 password bearer tokens
 - Password hashing with passlib/bcrypt
+
+## Recent Improvements
+
+### Query Routing & Temporal Detection
+- **Temporal pattern detection** for recent content queries (see `Multi_Agent.py:158-171`)
+  - Detects year patterns (2020-2029) and temporal phrases ("this month", "last week", etc.)
+  - Routes queries about recent timelines to web search instead of database
+  - Fixes issue where "movies from this month" returned outdated results
+
+### Greeting & Introduction Handling
+- **Smart greeting detection** (see `Movie_Companian.py:621-643`)
+  - Recognizes common greetings: hi, hello, hey, greetings, etc.
+  - Responds with friendly introduction and capabilities overview
+  - Properly saves greetings to conversation history for context
+  - Returns query_type: "greeting" for tracking
+
+### Enhanced AI Summary Generation
+- **Improved quality control** (see `summary_generator.py:61-82`)
+  - Enhanced prompts to prevent LLM from asking questions back
+  - Response validation filters out question patterns and invalid responses
+  - Increased token limit from 200 to 250 for more comprehensive summaries
+  - Cache validation before saving to prevent bad summaries
+  - Frontend cache versioning system for easy invalidation
+
+### Cache Management Features
+- **Summary cache clearing endpoint** (see `main.py:582-598`)
+  - `DELETE /summary/cache/clear` clears all cached summaries
+  - Useful for invalidating old/bad summaries after quality improvements
+  - Returns count of deleted summaries for verification
 
 ## Key Configuration
 
