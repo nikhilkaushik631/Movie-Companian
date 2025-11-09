@@ -4,6 +4,7 @@ from typing import List, Dict, Any
 from pydantic import BaseModel, Field
 from datetime import datetime
 import json
+import re
 from QA import MovieQASystem
 from langchain.prompts import ChatPromptTemplate
 from langchain.chains import LLMChain
@@ -103,7 +104,9 @@ class IntegratedQASystem:
         
         self._needs_web_keywords = {
             'latest', 'recent', 'new', 'current', 'streaming', 'where to watch',
-            'best', 'top', 'ranking', 'review', 'news', 'upcoming', 'now', 'today'
+            'best', 'top', 'ranking', 'review', 'news', 'upcoming', 'now', 'today',
+            'this month', 'this year', 'this week', 'last month', 'last week', 'last year',
+            '2024', '2025', 'in 2024', 'in 2025', 'from 2024', 'from 2025'
         }
 
         # Enhanced web search optimization
@@ -141,20 +144,48 @@ class IntegratedQASystem:
     def _smart_analysis_bypass(self, query: str, db_response: str) -> Dict:
         """Ultra-fast keyword-based analysis to bypass LLM when obvious"""
         query_lower = query.lower()
-        
+
+        # PRIORITY CHECK: Temporal/recency patterns - these ALWAYS need web search
+        # Check for year patterns (2020-2029)
+        year_pattern = r'\b(202[0-9])\b'
+        if re.search(year_pattern, query):
+            return {
+                "needs_web_search": True,
+                "reason": "Query mentions specific year - needs current information",
+                "search_query": f"{query} movie tv"
+            }
+
+        # Check for temporal phrases (this month, this year, last week, etc.)
+        temporal_patterns = [
+            r'\bthis\s+(month|year|week)\b',
+            r'\blast\s+(month|year|week)\b',
+            r'\bin\s+(january|february|march|april|may|june|july|august|september|october|november|december)\b',
+            r'\bfrom\s+(this|last)\s+(month|year|week)\b',
+            r'\bfrom\s+202[0-9]\b',
+            r'\bin\s+202[0-9]\b'
+        ]
+
+        for pattern in temporal_patterns:
+            if re.search(pattern, query_lower):
+                return {
+                    "needs_web_search": True,
+                    "reason": "Query mentions recent timeline - needs current information",
+                    "search_query": f"{query} movie tv latest 2025"
+                }
+
         # Check if DB response indicates missing info
         insufficient_indicators = [
             "couldn't find", "don't have", "not available", "unknown",
             "please check", "error", "insufficient", "no information"
         ]
-        
+
         if any(indicator in db_response.lower() for indicator in insufficient_indicators):
             return {
                 "needs_web_search": True,
                 "reason": "Database lacks sufficient information",
                 "search_query": f"{query} movie tv information"
             }
-        
+
         # Check for obvious web search needs (current/trending info)
         if any(keyword in query_lower for keyword in self._needs_web_keywords):
             return {

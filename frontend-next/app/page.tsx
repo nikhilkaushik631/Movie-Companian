@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
 
 type ChatMessage = { role: 'user' | 'bot'; content: string };
 
@@ -44,9 +45,69 @@ export default function Page() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchMsg, setSearchMsg] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
-  // AI Summaries for trending cards
+  // AI Summaries for trending cards and details
   const [aiSummaries, setAiSummaries] = useState<Record<string, string>>({});
   const [loadingSummaries, setLoadingSummaries] = useState<Set<string>>(new Set());
+  // Cache for detail summaries (full summaries when clicking cards) with localStorage persistence
+  const [detailSummaries, setDetailSummaries] = useState<Record<string, string>>({});
+
+  // Load cached summaries from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        // Cache version for invalidation - increment this to clear all caches
+        const CACHE_VERSION = 'v2'; // Changed from v1 to clear old cache
+        const currentVersion = localStorage.getItem('cinemizer_cache_version');
+
+        // Clear old cache if version mismatch
+        if (currentVersion !== CACHE_VERSION) {
+          console.log('🔄 Clearing old cache and reloading summaries...');
+          localStorage.removeItem('cinemizer_detail_summaries');
+          localStorage.setItem('cinemizer_cache_version', CACHE_VERSION);
+          setDetailSummaries({});
+          return;
+        }
+
+        const cached = localStorage.getItem('cinemizer_detail_summaries');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          // Check expiration (24 hours)
+          const now = Date.now();
+          const validCache: Record<string, string> = {};
+
+          Object.entries(parsed).forEach(([key, value]: [string, any]) => {
+            if (value.timestamp && (now - value.timestamp) < 24 * 60 * 60 * 1000) {
+              validCache[key] = value.summary;
+            }
+          });
+
+          if (Object.keys(validCache).length > 0) {
+            console.log(`✅ Loaded ${Object.keys(validCache).length} cached summaries`);
+            setDetailSummaries(validCache);
+          }
+        }
+      } catch {}
+    }
+  }, []);
+
+  // Save summaries to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined' && Object.keys(detailSummaries).length > 0) {
+      try {
+        const toCache: Record<string, any> = {};
+        const now = Date.now();
+
+        Object.entries(detailSummaries).forEach(([key, summary]) => {
+          toCache[key] = {
+            summary,
+            timestamp: now
+          };
+        });
+
+        localStorage.setItem('cinemizer_detail_summaries', JSON.stringify(toCache));
+      } catch {}
+    }
+  }, [detailSummaries]);
 
   useEffect(() => {
     sessionIdRef.current = crypto.randomUUID();
@@ -403,11 +464,29 @@ export default function Page() {
     }
   };
 
+  const loadDetailSummaryForItem = async (item: any) => {
+    const externalId = item.id?.toString();
+    if (!externalId) return;
+
+    // Skip if already cached (from localStorage or previous fetch)
+    if (detailSummaries[externalId]) {
+      return;
+    }
+
+    try {
+      const summary = await fetchLLMSummary(item);
+      if (summary && !isErrorMessage(summary)) {
+        setDetailSummaries(prev => ({...prev, [externalId]: summary}));
+      }
+    } catch {}
+  };
+
   const loadAISummariesForItems = async (items: any[]) => {
-    // Load summaries for the first few items to avoid overwhelming the backend
-    const itemsToLoad = items.slice(0, 3);
-    const promises = itemsToLoad.map(item => loadAISummaryForItem(item));
-    await Promise.allSettled(promises);
+    // Prefetch detail summaries for ALL items in background
+    items.forEach((item, index) => {
+      // Stagger requests to avoid overwhelming the backend
+      setTimeout(() => loadDetailSummaryForItem(item), index * 500);
+    });
   };
 
   const searchTMDBHome = async (query: string) => {
@@ -444,9 +523,25 @@ export default function Page() {
 
   const openDetails = async (item: any) => {
     setDetailsItem(item);
-    const llm = await fetchLLMSummary(item);
-    setDetailsLLM(llm);
     setDetailsOpen(true);
+
+    const externalId = item.id?.toString();
+    // Check if we have a cached summary (from localStorage or previous fetch)
+    if (externalId && detailSummaries[externalId]) {
+      setDetailsLLM(detailSummaries[externalId]);
+      console.log(`✅ Loaded from cache: ${item.title || item.name}`);
+    } else {
+      // Show loading message
+      setDetailsLLM('Loading AI summary...');
+      console.log(`⏳ Fetching new summary: ${item.title || item.name}`);
+      // Fetch summary if not cached
+      const llm = await fetchLLMSummary(item);
+      setDetailsLLM(llm);
+      // Cache it for next time (will be saved to localStorage automatically)
+      if (externalId && llm && !isErrorMessage(llm)) {
+        setDetailSummaries(prev => ({...prev, [externalId]: llm}));
+      }
+    }
   };
 
   // Ask via LLM is not triggered from home now
@@ -455,16 +550,40 @@ export default function Page() {
     <div className="grid-5 card-grid">
       {items.map((it) => {
         const externalId = it.id?.toString();
-        const summary = aiSummaries[externalId || ''];
-        const isLoadingSummary = loadingSummaries.has(externalId || '');
+        const hasDetailCache = externalId && detailSummaries[externalId];
 
         return (
           <div
             key={it.id}
             onClick={() => openDetails(it)}
             className="item"
-            style={{ position: 'relative' }}
+            style={{ position: 'relative', cursor: 'pointer' }}
+            title={hasDetailCache ? 'Details ready - click to view instantly!' : 'Click to load details'}
           >
+            {hasDetailCache && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  background: 'rgba(34, 197, 94, 0.9)',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: 24,
+                  height: 24,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 12,
+                  fontWeight: 'bold',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                  zIndex: 10
+                }}
+                title="Details cached - instant load!"
+              >
+                ⚡
+              </div>
+            )}
             <img
               src={it.poster_path ? `${tmdbImageBaseUrl}${it.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
               alt={it.title || it.name}
@@ -480,89 +599,6 @@ export default function Page() {
               {it.vote_average ? (
                 <div style={{ color: '#e6dcc6', fontSize: 12, marginTop: 4 }}>★ {(it.vote_average || 0).toFixed(1)}</div>
               ) : null}
-
-              {/* AI Summary Section */}
-              {(summary || isLoadingSummary) && (
-                <div style={{
-                  marginTop: 8,
-                  padding: 6,
-                  background: 'rgba(230, 220, 198, 0.05)',
-                  borderRadius: 4,
-                  border: '1px solid rgba(230, 220, 198, 0.15)'
-                }}>
-                  {isLoadingSummary ? (
-                    <div style={{
-                      color: '#e6dcc6',
-                      opacity: 0.7,
-                      fontSize: 10,
-                      fontStyle: 'italic',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4
-                    }}>
-                      <span>🤖</span>
-                      Generating AI summary...
-                    </div>
-                  ) : summary && !isErrorMessage(summary) && (
-                    <>
-                      <div style={{
-                        color: '#e6dcc6',
-                        opacity: 0.6,
-                        fontSize: 9,
-                        marginBottom: 4,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4
-                      }}>
-                        <span>🤖</span>
-                        AI Summary
-                      </div>
-                      <div style={{
-                        color: '#e6dcc6',
-                        fontSize: 10,
-                        lineHeight: '1.3',
-                        opacity: 0.85,
-                        display: '-webkit-box',
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden'
-                      }}>
-                        {summary}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Load summary button for items that don't have one or have error messages */}
-              {(!summary || isErrorMessage(summary)) && !isLoadingSummary && !demoMode && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    loadAISummaryForItem(it);
-                  }}
-                  style={{
-                    marginTop: 6,
-                    padding: '4px 8px',
-                    background: 'rgba(230, 220, 198, 0.1)',
-                    border: '1px solid rgba(230, 220, 198, 0.3)',
-                    borderRadius: 4,
-                    color: '#e6dcc6',
-                    fontSize: 9,
-                    cursor: 'pointer',
-                    opacity: 0.8,
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.background = 'rgba(230, 220, 198, 0.2)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.background = 'rgba(230, 220, 198, 0.1)';
-                  }}
-                >
-                  🤖 Get AI Summary
-                </button>
-              )}
             </div>
           </div>
         );
@@ -758,7 +794,19 @@ export default function Page() {
                   <p>Genres: {detailsItem.genre_ids && detailsItem.genre_ids.length > 0 ? genres[String(detailsItem.genre_ids[0])] || (detailsItem.name ? 'TV' : 'Movie') : (detailsItem.name ? 'TV' : 'Movie')}</p>
                   <p>Overview: {detailsItem.overview || 'N/A'}</p>
                   <p>Rating: {detailsItem.vote_average ? detailsItem.vote_average.toFixed(1) : 'N/A'}</p>
-                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(230,220,198,0.2)' }}>{detailsLLM}</div>
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(230,220,198,0.2)' }}>
+                    <ReactMarkdown
+                      components={{
+                        p: ({children}) => <p style={{ margin: '8px 0', lineHeight: '1.6' }}>{children}</p>,
+                        strong: ({children}) => <strong style={{ color: '#f4a261', fontWeight: 600 }}>{children}</strong>,
+                        em: ({children}) => <em style={{ fontStyle: 'italic', opacity: 0.9 }}>{children}</em>,
+                        ul: ({children}) => <ul style={{ marginLeft: 20, marginTop: 8 }}>{children}</ul>,
+                        li: ({children}) => <li style={{ marginBottom: 4 }}>{children}</li>,
+                      }}
+                    >
+                      {detailsLLM}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               </div>
             </div>

@@ -614,10 +614,34 @@ Return ONLY "yes" or "no". Be quick and decisive."""
 
     async def chat(self, user_input: str, session_id: str = None) -> str:
         """Optimized chat processing with load balanced models and performance improvements"""
-        
+
         # Update performance stats
         self._performance_stats['total_queries'] += 1
-        
+
+        # Handle greetings and introductions
+        greeting_patterns = ['hi', 'hello', 'hey', 'hola', 'greetings', 'good morning',
+                           'good afternoon', 'good evening', 'howdy', 'sup', "what's up",
+                           'hi there', 'hello there', 'hey there']
+        user_input_lower = user_input.lower().strip()
+        # Check if input is ONLY a greeting (or very short with greeting)
+        is_greeting = (user_input_lower in greeting_patterns or
+                      any(user_input_lower == pattern for pattern in greeting_patterns) or
+                      (len(user_input_lower) <= 20 and any(user_input_lower.startswith(pattern) for pattern in greeting_patterns)))
+
+        if is_greeting:
+            greeting_response = "Hello! I'm your movie and TV show companion. I can help you with:\n• Movie and TV show recommendations\n• Questions about plots, actors, directors, and more\n• Finding what to watch based on your mood or preferences\n\nWhat would you like to know about movies or TV shows today?"
+            self.memory.save_context(
+                {"input": user_input},
+                {"output": greeting_response}
+            )
+            return {
+                "response": greeting_response,
+                "session_id": session_id,
+                "query_type": "greeting",
+                "is_movie_related": True,
+                "recommendation_cards": []
+            }
+
         # Handle special commands quickly
         if user_input.lower() == 'clear':
             self.memory.clear()

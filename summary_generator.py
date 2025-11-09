@@ -43,7 +43,7 @@ class SummaryLLMChat:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a professional movie critic and entertainment writer. Generate engaging, concise summaries for movie and TV show recommendation cards. Focus on what makes each title interesting and worth watching."
+                        "content": "You are a professional movie critic and entertainment writer. Generate engaging, informative summaries for movie and TV shows. IMPORTANT: Always provide a complete summary based on the available plot information. Never ask questions or say you need more information. Never use phrases like 'What would you like to know?' or 'What specific aspect?'. Always write a complete summary covering the plot, themes, and what makes the title worth watching. Write in a descriptive, engaging tone."
                     },
                     {
                         "role": "user",
@@ -51,12 +51,30 @@ class SummaryLLMChat:
                     }
                 ],
                 model=self.model,
-                max_tokens=200,
-                temperature=0.7,
+                max_tokens=250,
+                temperature=0.6,
                 top_p=0.9,
             )
 
-            return chat_completion.choices[0].message.content.strip()
+            summary = chat_completion.choices[0].message.content.strip()
+
+            # Validate the response to avoid questions
+            invalid_patterns = [
+                "what would you like",
+                "what specific aspect",
+                "which aspect",
+                "what do you want to know",
+                "?",  # Questions
+                "more information needed"
+            ]
+
+            # Check if response contains invalid patterns
+            summary_lower = summary.lower()
+            if any(pattern in summary_lower for pattern in invalid_patterns):
+                # Regenerate with more explicit instructions
+                return None
+
+            return summary
 
         except Exception as e:
             print(f"Error generating summary: {e}")
@@ -245,7 +263,7 @@ Focus on what makes this {type_label} engaging and worth watching. Keep it under
 
             else:
                 # Detailed summary for modals
-                prompt = f"""Write a comprehensive 4-5 sentence summary for the {type_label} "{title}"{year_part}{genre_text}.
+                prompt = f"""Based on the plot information provided, write a comprehensive 4-5 sentence summary for the {type_label} "{title}"{year_part}{genre_text}.
 
 Plot: {plot}
 
@@ -254,7 +272,13 @@ Key Crew: {', '.join(key_crew) if key_crew else 'Not available'}
 Rating: {rating}/10
 {"Runtime: " + str(runtime) + " minutes" if runtime else ""}
 
-Include plot highlights, notable performances, critical reception insights, and what makes this {type_label} special. Keep it informative and engaging."""
+IMPORTANT: Write a complete, informative summary NOW based on the plot information above. Do NOT ask questions. Include:
+- Plot highlights and key story elements
+- What makes this {type_label} compelling
+- The tone and themes explored
+- Why viewers should watch it
+
+Write in an engaging, descriptive style. Start with the plot overview and flow naturally."""
 
             # Generate summary using dedicated LLM
             summary = await self.llm_chat.generate_summary(prompt)

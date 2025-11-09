@@ -279,16 +279,42 @@ def get_cached_summary(db: Session, external_id: str, source: str, kind: str = '
 
 def save_cached_summary(db: Session, external_id: str, source: str, text: str, kind: str = 'llm'):
     """
-    Save summary to database cache
+    Save summary to database cache (with validation to prevent bad summaries)
     """
     try:
+        # Validate summary before caching - don't cache questions or invalid responses
+        if not text or len(text.strip()) < 20:
+            logger.warning(f"Skipping cache - summary too short: {external_id}")
+            return False
+
+        text_lower = text.lower()
+        invalid_patterns = [
+            "what would you like",
+            "what specific aspect",
+            "which aspect",
+            "what do you want to know",
+            "more information needed",
+            "plot, characters, or reception",  # Common question pattern
+            "let me know if"
+        ]
+
+        # Don't cache if it contains question patterns
+        if any(pattern in text_lower for pattern in invalid_patterns):
+            logger.warning(f"Skipping cache - summary contains questions: {external_id}")
+            return False
+
+        # Don't cache if it has multiple question marks (likely asking questions)
+        if text.count('?') > 1:
+            logger.warning(f"Skipping cache - summary has multiple questions: {external_id}")
+            return False
+
         # Check if summary already exists
         existing = db.query(ContentSummary).filter(
             ContentSummary.title_external_id == external_id,
             ContentSummary.title_source == source,
             ContentSummary.kind == kind
         ).first()
-        
+
         if existing:
             # Update existing summary
             existing.text = text
@@ -302,11 +328,12 @@ def save_cached_summary(db: Session, external_id: str, source: str, text: str, k
                 text=text
             )
             db.add(summary)
-        
+
         db.commit()
+        logger.info(f"Cached valid summary for {external_id}")
         return True
     except Exception as e:
-        print(f"Error saving cached summary: {e}")
+        logger.error(f"Error saving cached summary: {e}")
         db.rollback()
         return False
 
@@ -551,6 +578,24 @@ async def generate_summary(
     except Exception as e:
         logger.error(f"Error generating summary: {e}")
         raise HTTPException(status_code=500, detail=f"Error generating summary: {str(e)}")
+
+@app.delete("/summary/cache/clear")
+async def clear_summary_cache(db: Session = Depends(get_db)):
+    """Clear all cached summaries from the database"""
+    try:
+        # Delete all cached summaries
+        deleted_count = db.query(ContentSummary).delete()
+        db.commit()
+        logger.info(f"Cleared {deleted_count} cached summaries from database")
+        return {
+            "success": True,
+            "message": f"Cleared {deleted_count} cached summaries",
+            "deleted_count": deleted_count
+        }
+    except Exception as e:
+        logger.error(f"Error clearing summary cache: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error clearing cache: {str(e)}")
 
 @app.get("/tmdb/{full_path:path}")
 async def tmdb_proxy(full_path: str, request: Request):
