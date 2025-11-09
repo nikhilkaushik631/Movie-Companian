@@ -1,9 +1,9 @@
 services:
   # Backend API
   - type: web
-    name: movie-companion-backend
+    name: cinemizer-backend
     env: python
-    repo: https://github.com/your-username/movie-companion.git
+    repo: https://github.com/Nikhilkaushik23/cinemizer.git
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 2
     healthCheckPath: /health
@@ -33,11 +33,11 @@ services:
           name: movie-companion-db
           property: connectionString
 
-  # Frontend
+  # Frontend (Note: We'll deploy this to Vercel instead)
   - type: web
-    name: movie-companion-frontend
+    name: cinemizer-frontend
     env: node
-    repo: https://github.com/your-username/movie-companion.git
+    repo: https://github.com/Nikhilkaushik23/cinemizer.git
     rootDir: frontend-next
     buildCommand: npm install && npm run build
     startCommand: npm start
