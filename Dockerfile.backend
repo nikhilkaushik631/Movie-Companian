@@ -47,4 +47,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:8000/health || exit 1
 
 # Start command with optimizations
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--access-log"]
+# Use shell form to allow PORT environment variable expansion (Railway/Render compatibility)
+# Reduce workers to 1 for free tier resource limits
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --access-log

@@ -173,11 +173,30 @@ SECRET_KEY (for JWT)
 
 ## Deployment
 
-See `DEPLOYMENT_GUIDE.md` for full deployment instructions. Quick options:
-- **Local**: `./deploy.sh` (Docker Compose)
-- **Production**: `docker-compose -f docker-compose.production.yml up`
-- **Railway/Render**: Configuration files included (`railway.json`, `render.yaml`)
-- **Vercel**: Frontend can deploy via `vercel.json`
+### Free Tier Deployment (Recommended)
+
+**Quick Start** (5 minutes):
+- See [QUICK_DEPLOY.md](QUICK_DEPLOY.md) for fastest deployment
+- Frontend: Vercel (free, unlimited bandwidth)
+- Backend: Railway.app (free $5/month credit)
+
+**Detailed Guides:**
+- [FREE_DEPLOYMENT_GUIDE.md](FREE_DEPLOYMENT_GUIDE.md) - Complete free tier deployment guide
+- [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) - Step-by-step checklist
+- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Full deployment options
+
+**Configuration Files:**
+- `vercel.json` - Vercel deployment configuration
+- `frontend-next/vercel.json` - Frontend-specific Vercel config
+- `railway.json` - Railway.app configuration
+- `render.yaml` - Render.com configuration
+- `Dockerfile.backend` - Optimized backend container
+- `start.sh` - Production startup script
+
+**Local Development:**
+- `./deploy.sh` - Quick local Docker Compose deployment
+- `docker-compose.yml` - Local development stack
+- `docker-compose.production.yml` - Production-ready stack
 
 ## Git Workflow
 
