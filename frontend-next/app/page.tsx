@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 
@@ -45,11 +45,33 @@ export default function Page() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchMsg, setSearchMsg] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+
   // AI Summaries for trending cards and details
   const [aiSummaries, setAiSummaries] = useState<Record<string, string>>({});
   const [loadingSummaries, setLoadingSummaries] = useState<Set<string>>(new Set());
   // Cache for detail summaries (full summaries when clicking cards) with localStorage persistence
   const [detailSummaries, setDetailSummaries] = useState<Record<string, string>>({});
+
+  // Debounce search query - wait 500ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Auto-search when debounced query changes (only if non-empty and different from last search)
+  const lastSearchRef = useRef('');
+  useEffect(() => {
+    const trimmed = debouncedSearchQuery.trim();
+    if (trimmed && trimmed !== lastSearchRef.current && trimmed.length >= 2) {
+      lastSearchRef.current = trimmed;
+      searchTMDBHome(trimmed);
+    }
+  }, [debouncedSearchQuery]);
 
   // Load cached summaries from localStorage on mount
   useEffect(() => {
@@ -489,9 +511,17 @@ export default function Page() {
     });
   };
 
-  const searchTMDBHome = async (query: string) => {
+  const searchTMDBHome = useCallback(async (query: string) => {
     const q = (query || '').trim();
-    if (!q) return;
+    if (!q || q.length < 2) {
+      setSearchResults([]);
+      setSearchMsg('');
+      return;
+    }
+
+    // Update last search to prevent duplicate debounced search
+    lastSearchRef.current = q;
+
     setSearchMsg('Searching TMDB...');
     setSearchLoading(true);
     try {
@@ -503,23 +533,21 @@ export default function Page() {
         ...(movie.results || []).map((x:any)=>({ ...x, type:'movie'})),
         ...(tv.results || []).map((x:any)=>({ ...x, type:'tv'})),
       ].sort((a:any,b:any)=> (b.popularity||0)-(a.popularity||0));
-      if (all.length>0) {
-        setSearchMsg('Found! Opening details...');
-        const best = all[0];
-        const llm = await fetchLLMSummary(best);
-        setDetailsItem(best);
-        setDetailsLLM(llm);
-        setDetailsOpen(true);
+
+      setSearchResults(all.slice(0, 10)); // Show top 10 results
+
+      if (all.length > 0) {
+        setSearchMsg(`Found ${all.length} results`);
       } else {
         setSearchMsg('No results found.');
       }
     } catch {
       setSearchMsg('Search failed.');
+      setSearchResults([]);
     } finally {
       setSearchLoading(false);
-      setTimeout(()=>setSearchMsg(''), 3000);
     }
-  };
+  }, []);
 
   const openDetails = async (item: any) => {
     setDetailsItem(item);
@@ -625,21 +653,115 @@ export default function Page() {
           {/* Quick Search */}
           <section className="card">
             <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
-              <input
-                value={searchQuery}
-                onChange={(e)=>setSearchQuery(e.target.value)}
-                onKeyDown={(e)=>{ if(e.key==='Enter') searchTMDBHome(searchQuery); }}
-                placeholder="Search movies & TV shows..."
-                style={{ flex:1, minWidth:260, padding:'10px 14px', borderRadius:8, border:'1px solid rgba(230,220,198,0.2)', background:'rgba(230,220,198,0.05)', color:'#e6dcc6' }}
-              />
+              <div style={{ flex:1, minWidth:260, position:'relative' }}>
+                <input
+                  value={searchQuery}
+                  onChange={(e)=>setSearchQuery(e.target.value)}
+                  onKeyDown={(e)=>{ if(e.key==='Enter') searchTMDBHome(searchQuery); }}
+                  placeholder="Search movies & TV shows... (auto-search after typing)"
+                  style={{ width:'100%', padding:'10px 40px 10px 14px', borderRadius:8, border:'1px solid rgba(230,220,198,0.2)', background:'rgba(230,220,198,0.05)', color:'#e6dcc6' }}
+                />
+                {searchQuery.trim() && (
+                  <button
+                    onClick={() => { setSearchQuery(''); setSearchResults([]); setSearchMsg(''); }}
+                    style={{
+                      position:'absolute',
+                      right:12,
+                      top:'50%',
+                      transform:'translateY(-50%)',
+                      background:'transparent',
+                      border:'none',
+                      color:'#f4a261',
+                      cursor:'pointer',
+                      fontSize:18,
+                      padding:4,
+                      lineHeight:1,
+                      opacity:0.7
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = '0.7'}
+                  >
+                    ✕
+                  </button>
+                )}
+                {searchQuery.trim() && searchQuery !== debouncedSearchQuery && !searchLoading && (
+                  <span style={{ position:'absolute', right:40, top:'50%', transform:'translateY(-50%)', fontSize:11, opacity:0.5, color:'#f4a261' }}>
+                    ⏳
+                  </span>
+                )}
+              </div>
               <button className="btn btn-primary" onClick={()=>searchTMDBHome(searchQuery)} disabled={searchLoading}>🔍 {searchLoading?'Searching...':'Search'}</button>
             </div>
             {searchMsg && <div className="muted" style={{ marginTop:8 }}>{searchMsg}</div>}
-            <div style={{ display:'flex', gap:8, marginTop:10, flexWrap:'wrap' }}>
-              {['Dune: Part Two','The Bear','Oppenheimer','Wednesday','Avatar: The Way of Water','House of the Dragon'].map(ex=> (
-                <button key={ex} className="tab" onClick={()=>{ setSearchQuery(ex); searchTMDBHome(ex); }}>{ex}</button>
-              ))}
-            </div>
+
+            {/* Search Results List */}
+            {searchResults.length > 0 && (
+              <div style={{ marginTop: 16, display: 'grid', gap: 12 }}>
+                {searchResults.map((item) => {
+                  const title = item.title || item.name || 'Unknown';
+                  const year = (item.release_date || item.first_air_date || '').split('-')[0];
+                  const mediaType = item.type || 'movie';
+                  const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
+
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => openDetails(item)}
+                      style={{
+                        display: 'flex',
+                        gap: 12,
+                        padding: 12,
+                        background: 'rgba(230,220,198,0.03)',
+                        borderRadius: 8,
+                        border: '1px solid rgba(230,220,198,0.1)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(230,220,198,0.08)';
+                        e.currentTarget.style.borderColor = 'rgba(244,162,97,0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(230,220,198,0.03)';
+                        e.currentTarget.style.borderColor = 'rgba(230,220,198,0.1)';
+                      }}
+                    >
+                      {item.poster_path && (
+                        <img
+                          src={`https://image.tmdb.org/t/p/w92${item.poster_path}`}
+                          alt={title}
+                          style={{ width: 60, height: 90, borderRadius: 6, objectFit: 'cover' }}
+                        />
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+                          <h4 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{title}</h4>
+                          <span style={{ fontSize: 12, opacity: 0.6 }}>
+                            {mediaType === 'tv' ? '📺 TV' : '🎬 Movie'}
+                          </span>
+                        </div>
+                        {year && <div style={{ fontSize: 13, opacity: 0.7, marginBottom: 4 }}>{year}</div>}
+                        <div style={{ display: 'flex', gap: 12, fontSize: 13 }}>
+                          <span>⭐ {rating}</span>
+                          {item.popularity && (
+                            <span style={{ opacity: 0.6 }}>👥 {Math.round(item.popularity)}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Example searches - only show when no results */}
+            {searchResults.length === 0 && (
+              <div style={{ display:'flex', gap:8, marginTop:10, flexWrap:'wrap' }}>
+                {['Dune: Part Two','The Bear','Oppenheimer','Wednesday','Avatar: The Way of Water','House of the Dragon'].map(ex=> (
+                  <button key={ex} className="tab" onClick={()=>{ setSearchQuery(ex); searchTMDBHome(ex); }}>{ex}</button>
+                ))}
+              </div>
+            )}
           </section>
           {/* Trending Movies */}
           <section className="card">
