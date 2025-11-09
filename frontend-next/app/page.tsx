@@ -329,6 +329,65 @@ export default function Page() {
     })();
   }, [token]);
 
+  // Progressive loading system - loads ALL cards from ALL tabs one by one
+  useEffect(() => {
+    if (demoMode) return;
+
+    const loadAllTabsProgressively = async () => {
+      // Wait for all tabs to load their initial data
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      console.log('🚀 Starting progressive loading across all tabs...');
+
+      // Collect all unique items from all tabs
+      const allItemsMap = new Map();
+
+      [...movieResults, ...tvResults, ...indiaResults, ...animeResults].forEach(item => {
+        const externalId = item.id?.toString();
+        if (externalId && !allItemsMap.has(externalId)) {
+          allItemsMap.set(externalId, item);
+        }
+      });
+
+      const allItems = Array.from(allItemsMap.values());
+
+      // Filter out items that are already cached
+      const uncachedItems = allItems.filter(item => {
+        const externalId = item.id?.toString();
+        return externalId && !detailSummaries[externalId];
+      });
+
+      console.log(`📊 Total unique items: ${allItems.length}, Uncached: ${uncachedItems.length}`);
+
+      if (uncachedItems.length === 0) {
+        console.log('✅ All items already cached!');
+        return;
+      }
+
+      // Load them one by one with a delay to avoid overwhelming the backend
+      for (let i = 0; i < uncachedItems.length; i++) {
+        const item = uncachedItems[i];
+        await loadDetailSummaryForItem(item);
+
+        // Wait 800ms between requests to be gentle on the backend
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        // Log progress every 5 items
+        if ((i + 1) % 5 === 0 || (i + 1) === uncachedItems.length) {
+          console.log(`📈 Progress: ${i + 1}/${uncachedItems.length} items loaded`);
+        }
+      }
+
+      console.log('✅ Progressive loading complete!');
+    };
+
+    // Only start progressive loading when we have items from all tabs
+    if (movieResults.length > 0 && tvResults.length > 0 &&
+        indiaResults.length > 0 && animeResults.length > 0) {
+      loadAllTabsProgressively();
+    }
+  }, [movieResults, tvResults, indiaResults, animeResults, demoMode]);
+
   const speak = useMemo(
     () =>
       async (text: string) => {
@@ -488,27 +547,29 @@ export default function Page() {
 
   const loadDetailSummaryForItem = async (item: any) => {
     const externalId = item.id?.toString();
-    if (!externalId) return;
+    if (!externalId) return false;
 
     // Skip if already cached (from localStorage or previous fetch)
     if (detailSummaries[externalId]) {
-      return;
+      return true;
     }
 
     try {
       const summary = await fetchLLMSummary(item);
       if (summary && !isErrorMessage(summary)) {
         setDetailSummaries(prev => ({...prev, [externalId]: summary}));
+        console.log(`📦 Cached: ${item.title || item.name}`);
+        return true;
       }
-    } catch {}
+    } catch {
+      console.log(`❌ Failed: ${item.title || item.name}`);
+    }
+    return false;
   };
 
   const loadAISummariesForItems = async (items: any[]) => {
-    // Prefetch detail summaries for ALL items in background
-    items.forEach((item, index) => {
-      // Stagger requests to avoid overwhelming the backend
-      setTimeout(() => loadDetailSummaryForItem(item), index * 500);
-    });
+    // No longer used - progressive loading handles this globally
+    return;
   };
 
   const searchTMDBHome = useCallback(async (query: string) => {

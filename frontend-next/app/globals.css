@@ -18,6 +18,8 @@
 html,body{
   height:100%;
   overflow-x:hidden;
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
 }
 
 html{
@@ -97,12 +99,8 @@ body.app-body{
   font-size:36px;
   margin:0 0 8px;
   letter-spacing:.8px;
-  background:linear-gradient(135deg, #00ffff, #ff00ff, #ffff00, #00ff00);
-  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
-  text-shadow: 
-    0 0 10px rgba(0,255,255,0.5),
-    0 0 20px rgba(255,0,255,0.3),
-    0 0 30px rgba(255,255,0,0.2);
+  color: #f5f0e6;
+  font-weight: 700;
   position: relative;
   z-index: 1;
 }
